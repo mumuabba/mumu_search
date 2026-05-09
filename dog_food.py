@@ -10,9 +10,8 @@ from PIL import Image
 # 1. 페이지 설정
 st.set_page_config(page_title="무무 탐색기 - mumuabba", layout="wide")
 
-# [헤더 레이아웃] 무무 사진(90도 회전)과 제목
+# [헤더 레이아웃]
 col1, col2 = st.columns([0.2, 0.8])
-
 with col1:
     if os.path.exists("mumu.jpg"):
         try:
@@ -30,14 +29,12 @@ with col2:
 
 CACHE_FILE = "pet_data_cache.json"
 
-# [보안] Secrets 호출
 try:
     auth_key = st.secrets["AUTH_KEY"]
 except:
     st.error("설정(Secrets)에서 AUTH_KEY를 찾을 수 없습니다.")
     st.stop()
 
-# [유틸리티] 네이버 지도 링크
 def create_naver_link(row):
     base_url = "https://map.naver.com/v5/search/"
     addr = str(row.get('상세주소', ''))
@@ -46,73 +43,65 @@ def create_naver_link(row):
     query = f"{city} {row.get('업소명', '')}"
     return f"{base_url}{urllib.parse.quote(query)}"
 
-# 2. 데이터 로드 로직
+# 2. 데이터 로드
 df = None
 if os.path.exists(CACHE_FILE):
     try:
         with open(CACHE_FILE, 'r', encoding='utf-8') as f:
-            cache_data = json.load(f)
-            df = pd.DataFrame(cache_data)
+            df = pd.DataFrame(json.load(f))
     except:
-        st.error("데이터 파일을 읽는 중 오류가 발생했습니다.")
+        st.error("데이터 로딩 실패")
 
-# 3. 사용자 인터페이스 (드롭다운 선택 전용 UI)
+# 3. 사용자 인터페이스 (에러 방어 로직 추가)
 if df is not None and not df.empty:
     df['지도보기'] = df.apply(create_naver_link, axis=1)
-    df['지역'] = df['상세주소'].apply(lambda x: str(x).split()[0] if str(x).split() else "미분류")
+    
+    # [방어 코드] 주소가 짧거나 비어있는 경우 '미분류' 처리
+    def get_broad_region(addr):
+        parts = str(addr).split()
+        return parts[0] if len(parts) > 0 else "미분류"
+
+    df['지역'] = df['상세주소'].apply(get_broad_region)
 
     st.sidebar.header("📍 지역 필터")
+    broad_regions = sorted([r for r in df["지역"].unique() if r not in ["미분류", "nan", "None"]])
     
-    # 1단계: 광역 선택 (무조건 선택)
-    broad_regions = sorted([r for r in df["지역"].unique() if r != "미분류"])
-    selected_broad = st.sidebar.selectbox(
-        "1. 광역 선택", 
-        ["지역을 선택하세요"] + broad_regions, 
-        index=0
-    )
+    selected_broad = st.sidebar.selectbox("1. 광역 선택", ["지역을 선택하세요"] + broad_regions, index=0)
     
     if selected_broad == "지역을 선택하세요":
         st.write("---")
-        st.info("👈 왼쪽 사이드바에서 **지역을 선택**하시면 반려동물 동반 가능 식당 리스트가 나타납니다!")
+        st.info("👈 왼쪽 사이드바에서 **지역을 선택**하시면 식당 리스트가 나타납니다!")
         st.success("무무와 함께 행복한 나들이를 계획해 보세요! 🐾")
     else:
-        # 2단계: 상세 지역 선택 (해당 광역에 속한 시/군만 필터링해서 보여줌)
         broad_df = df[df["지역"] == selected_broad].copy()
         
-        # 상세주소에서 시/군/구 추출 (두 번째 단어)
-        def get_city(addr):
+        # [방어 코드] 상세 지역(시/군) 추출 시 에러 방지
+        def get_city_safe(addr):
             parts = str(addr).split()
             return parts[1] if len(parts) > 1 else "기타"
             
-        city_list = sorted(list(set(broad_df["상세주소"].apply(get_city))))
+        # 시/군 목록 생성 시 '기타'를 포함하여 안전하게 생성
+        city_series = broad_df["상세주소"].apply(get_city_safe)
+        city_list = sorted(list(set(city_series.values)))
         
-        selected_city = st.sidebar.selectbox(
-            "2. 상세 지역 선택", 
-            ["전체"] + city_list,
-            index=0
-        )
+        selected_city = st.sidebar.selectbox("2. 상세 지역 선택", ["전체"] + city_list, index=0)
         
-        # 최종 필터링
         if selected_city == "전체":
             final_df = broad_df
         else:
-            # 주소에 해당 시/군 이름이 포함된 데이터만 추출
-            final_df = broad_df[broad_df["상세주소"].apply(lambda x: get_city(x) == selected_city)]
+            # 선택한 시/군과 일치하는 데이터만 필터링
+            final_df = broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
         
-        st.subheader(f"📍 {selected_broad} {selected_city if selected_city != '전체' else ''} 검색 결과 ({len(final_df):, shark}건)")
-        st.caption("💡 표를 오른쪽으로 밀면 네이버 지도 링크를 확인할 수 있습니다.")
-
-        # 테이블 표시 (모바일 최적화)
+        st.subheader(f"📍 {selected_broad} {selected_city if selected_city != '전체' else ''} 검색 결과 ({len(final_df):,}건)")
+        
         st.dataframe(
             final_df[['업소명', '업종', '상세주소', '지도보기']],
             use_container_width=True,
-            column_config={
-                "지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")
-            },
+            column_config={"지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")},
             hide_index=True
         )
 
-# 5. 하단 출처 및 안내문구 (이전 버전 복구)
+# 5. 하단 안내문구 (이전 버전 유지)
 st.divider()
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
