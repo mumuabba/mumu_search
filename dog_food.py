@@ -96,11 +96,10 @@ if not df.empty:
             
             st.success(f"🔍 {selected_broad} {selected_city if selected_city != '전체' else ''} 결과: {len(final_df):,}건")
             
-            # [수정] height=None 추가로 표 잘림 방지
+            # [수정] 에러가 났던 height 옵션을 완전히 제거했습니다.
             st.dataframe(
                 final_df[['업소명', '상세주소', '지도보기']],
                 use_container_width=True,
-                height=None, 
                 column_config={"지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")},
                 hide_index=True
             )
@@ -113,7 +112,7 @@ st.divider()
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
         <p style="font-size: 1rem; color: #222;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
-        본 서비스는 <b>반려동물을 가족으로 키우는 반려인의 마음으로, 전국의 동반 가능 식당 정보를 보다 쉽고 편리하게 확인하기 위한 단순 정보 제공 목적으로 제작되었습니다.</b><br>
+        본 서비스은 <b>반려동물을 가족으로 키우는 반려인의 마음으로, 전국의 동반 가능 식당 정보를 보다 쉽고 편리하게 확인하기 위한 단순 정보 제공 목적으로 제작되었습니다.</b><br>
         공공데이터법에 의거하여 <b>식품의약품안전처</b>에서 제공하는 Open-API를 활용한 <b>비영리 목적의 사이트</b>임을 밝힙니다.<br><br>
         데이터는 매일 자정 자동으로 최신화되나, 현장의 영업 상황은 실시간 반영이 어려울 수 있습니다.<br>
         <span style="color: #d32f2f;"><b>정확한 정보 확인을 위해 방문 전 반드시 해당 업소에 유선으로 영업 여부를 확인해 주시기 바랍니다.</b></span><br>
