@@ -46,7 +46,7 @@ def create_naver_link(row):
     query = f"{city} {row.get('업소명', '')}"
     return f"{base_url}{urllib.parse.quote(query)}"
 
-# 2. 데이터 로드 로직 (API 동기화 생략/파일 우선)
+# 2. 데이터 로드 로직
 df = None
 if os.path.exists(CACHE_FILE):
     try:
@@ -56,33 +56,53 @@ if os.path.exists(CACHE_FILE):
     except:
         st.error("데이터 파일을 읽는 중 오류가 발생했습니다.")
 
-# 3. 사용자 인터페이스 (지역 선택 시에만 출력)
+# 3. 사용자 인터페이스 (드롭다운 선택 전용 UI)
 if df is not None and not df.empty:
     df['지도보기'] = df.apply(create_naver_link, axis=1)
     df['지역'] = df['상세주소'].apply(lambda x: str(x).split()[0] if str(x).split() else "미분류")
 
     st.sidebar.header("📍 지역 필터")
-    broad_regions = sorted(df["지역"].unique())
     
-    # [수정] 초기값을 "선택하세요"로 설정
-    selected_broad = st.sidebar.selectbox("1. 광역 선택", ["지역을 선택하세요"] + broad_regions, index=0)
+    # 1단계: 광역 선택 (무조건 선택)
+    broad_regions = sorted([r for r in df["지역"].unique() if r != "미분류"])
+    selected_broad = st.sidebar.selectbox(
+        "1. 광역 선택", 
+        ["지역을 선택하세요"] + broad_regions, 
+        index=0
+    )
     
     if selected_broad == "지역을 선택하세요":
-        # 초기 화면 메시지
         st.write("---")
         st.info("👈 왼쪽 사이드바에서 **지역을 선택**하시면 반려동물 동반 가능 식당 리스트가 나타납니다!")
         st.success("무무와 함께 행복한 나들이를 계획해 보세요! 🐾")
     else:
+        # 2단계: 상세 지역 선택 (해당 광역에 속한 시/군만 필터링해서 보여줌)
         broad_df = df[df["지역"] == selected_broad].copy()
-        city_list = sorted(list(set(broad_df["상세주소"].apply(lambda x: str(x).split()[1] if len(str(x).split()) > 1 else "전체"))))
-        selected_city = st.sidebar.selectbox("2. 상세 지역 선택", ["전체"] + city_list)
         
-        final_df = broad_df if selected_city == "전체" else broad_df[broad_df["상세주소"].str.contains(selected_city, na=False)]
+        # 상세주소에서 시/군/구 추출 (두 번째 단어)
+        def get_city(addr):
+            parts = str(addr).split()
+            return parts[1] if len(parts) > 1 else "기타"
+            
+        city_list = sorted(list(set(broad_df["상세주소"].apply(get_city))))
         
-        st.subheader(f"📍 {selected_broad} {selected_city if selected_city != '전체' else ''} 검색 결과 ({len(final_df):,}건)")
+        selected_city = st.sidebar.selectbox(
+            "2. 상세 지역 선택", 
+            ["전체"] + city_list,
+            index=0
+        )
+        
+        # 최종 필터링
+        if selected_city == "전체":
+            final_df = broad_df
+        else:
+            # 주소에 해당 시/군 이름이 포함된 데이터만 추출
+            final_df = broad_df[broad_df["상세주소"].apply(lambda x: get_city(x) == selected_city)]
+        
+        st.subheader(f"📍 {selected_broad} {selected_city if selected_city != '전체' else ''} 검색 결과 ({len(final_df):, shark}건)")
         st.caption("💡 표를 오른쪽으로 밀면 네이버 지도 링크를 확인할 수 있습니다.")
 
-        # 테이블 표시
+        # 테이블 표시 (모바일 최적화)
         st.dataframe(
             final_df[['업소명', '업종', '상세주소', '지도보기']],
             use_container_width=True,
@@ -92,13 +112,16 @@ if df is not None and not df.empty:
             hide_index=True
         )
 
-# 5. 하단 공고
+# 5. 하단 출처 및 안내문구 (이전 버전 복구)
 st.divider()
 st.markdown(f"""
-    <div style="font-size: 0.8rem; color: #555; text-align: center; line-height: 1.6; background-color: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #eee;">
-        <p><b>[ 안내 및 책임 한계 고지 ]</b></p>
-        본 서비스는 <b>반려동물과 함께하는 행복한 일상을 위해 제작된 단순 정보 제공용 비영리 사이트</b>입니다.<br>
-        실시간 영업 상황은 반영이 어려우니 <b>방문 전 반드시 유선으로 확인</b>해 주시기 바랍니다.<br>
-        ⓒ 2026. <b>mumuabba</b>. All rights reserved. | 출처: 식약처 식품안전나라
+    <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
+        <p style="font-size: 1rem; color: #222;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
+        본 서비스는 <b>반려동물을 가족으로 키우는 반려인의 마음으로, 전국의 동반 가능 식당 정보를 보다 쉽고 편리하게 확인하기 위한 단순 정보 제공 목적으로 제작되었습니다.</b><br>
+        공공데이터법에 의거하여 <b>식품의약품안전처</b>에서 제공하는 Open-API를 활용한 <b>비영리 목적의 사이트</b>임을 밝힙니다.<br><br>
+        데이터는 매일 자정 자동으로 최신화되나, 현장의 영업 상황은 실시간 반영이 어려울 수 있습니다.<br>
+        <span style="color: #d32f2f;"><b>정확한 정보 확인을 위해 방문 전 반드시 해당 업소에 유선으로 영업 여부를 확인해 주시기 바랍니다.</b></span><br>
+        본 서비스의 정보를 활용한 결과로 발생하는 사항에 대해 운영자는 법적 책임을 지지 않습니다.<br><br>
+        ⓒ 2026. <b>mumuabba</b>. All rights reserved. | 출처: 식품의약품안전처 식품안전나라
     </div>
 """, unsafe_allow_html=True)
