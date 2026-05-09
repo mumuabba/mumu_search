@@ -56,7 +56,7 @@ if os.path.exists(CACHE_FILE):
     except:
         st.error("데이터 파일을 읽는 중 오류가 발생했습니다.")
 
-# 3. 사용자 인터페이스 (타이핑 방지 클릭형 UI)
+# 3. 사용자 인터페이스 (드롭다운 최적화 UI)
 if df is not None and not df.empty:
     df['지도보기'] = df.apply(create_naver_link, axis=1)
     
@@ -70,13 +70,11 @@ if df is not None and not df.empty:
         st.header("📍 지역 필터")
         broad_regions = sorted([r for r in df["지역"].unique() if r not in ["미분류", "nan", "None"]])
         
-        # [수정] 광역 선택 시 자판이 뜨지 않도록 Radio 버튼(클릭형) 적용
-        st.write("**1. 광역 선택**")
-        selected_broad = st.radio(
-            "광역을 골라주세요", 
+        # [수정] 광역 선택도 상세지역처럼 드롭다운(selectbox)으로 변경하여 UI 통일
+        selected_broad = st.selectbox(
+            "1. 광역 선택", 
             ["지역을 선택하세요"] + broad_regions, 
-            index=0,
-            label_visibility="collapsed"
+            index=0
         )
         
         selected_city = "전체"
@@ -90,9 +88,12 @@ if df is not None and not df.empty:
                 
             city_list = sorted(list(set(broad_df["상세주소"].apply(get_city_safe).values)))
             
-            # 2단계 상세 지역 선택
-            st.write(f"**2. {selected_broad} 상세 지역**")
-            selected_city = st.selectbox("상세 지역 선택", ["전체"] + city_list)
+            # 상세 지역 선택
+            selected_city = st.selectbox(
+                f"2. {selected_broad} 상세 지역", 
+                ["전체"] + city_list,
+                index=0
+            )
 
     # 4. 결과 화면 제어
     if selected_broad == "지역을 선택하세요":
@@ -112,7 +113,7 @@ if df is not None and not df.empty:
             final_df = broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
         
         st.subheader(f"📍 {selected_broad} {selected_city if selected_city != '전체' else ''} 결과 ({len(final_df):,}건)")
-        st.caption("💡 표를 오른쪽으로 밀면 네이버 지도 링크를 확인할 수 있습니다.")
+        st.caption("💡 지도는 표를 오른쪽으로 밀어서 확인하세요.")
 
         # 테이블 표시
         st.dataframe(
@@ -124,7 +125,7 @@ if df is not None and not df.empty:
             hide_index=True
         )
 
-# 5. 하단 출처 및 안내문구 (수정 없이 이전 버전 그대로 유지)
+# 5. 하단 출처 및 안내문구 (수정 없음)
 st.divider()
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
