@@ -7,7 +7,7 @@ import urllib.parse
 from datetime import datetime
 from PIL import Image
 
-# 1. 페이지 설정 (모바일 최적화 레이아웃)
+# 1. 페이지 설정
 st.set_page_config(page_title="무무 탐색기 - mumuabba", layout="wide")
 
 CACHE_FILE = "pet_data_cache.json"
@@ -39,7 +39,7 @@ def load_data():
 
 df = load_data()
 
-# 2. 사용자 인터페이스 (Pills UI 및 조건부 노출 로직)
+# 2. 사용자 인터페이스 (Pills UI)
 if not df.empty:
     df['지도보기'] = df.apply(create_naver_link, axis=1)
     def get_broad_region(addr):
@@ -47,12 +47,12 @@ if not df.empty:
         return parts[0] if len(parts) > 0 else "미분류"
     df['지역'] = df['상세주소'].apply(get_broad_region)
 
-    # 헤더 섹션 (고정 문구)
+    # 헤더 섹션
     st.markdown("### 🐶 무무 탐색기 : 전국 동반 식당")
     st.caption("반려동물을 사랑하는 마음으로 만든 비영리 정보 서비스")
     st.write("---")
 
-    # [핵심] 키보드 안 뜨는 박스형 필터 (Pills)
+    # 지역 선택 필터
     st.markdown("#### 📍 1. 광역 지역 선택")
     broad_regions = sorted([r for r in df["지역"].unique() if r not in ["미분류", "nan", "None"]])
     
@@ -63,9 +63,7 @@ if not df.empty:
         label_visibility="collapsed"
     )
     
-    # 3. 사진 노출 및 상세 검색 로직
     if not selected_broad:
-        # [초기 화면] 아무것도 선택 안했을 때만 사진 노출
         st.write("")
         if os.path.exists("mumu.jpg"):
             img = Image.open("mumu.jpg").rotate(-90, expand=True)
@@ -73,7 +71,6 @@ if not df.empty:
         st.info("위의 **지역 버튼**을 클릭하여 탐색을 시작하세요! 🐾")
     
     else:
-        # 광역이 선택된 경우
         st.write("---")
         st.markdown(f"#### 📍 2. {selected_broad} 상세 지역")
         broad_df = df[df["지역"] == selected_broad].copy()
@@ -92,7 +89,6 @@ if not df.empty:
         )
 
         if selected_city:
-            # [결과 화면] 상세 지역까지 선택 완료 시 결과 출력 (사진은 자동 제거됨)
             if selected_city == "전체":
                 final_df = broad_df
             else:
@@ -100,19 +96,19 @@ if not df.empty:
             
             st.success(f"🔍 {selected_broad} {selected_city if selected_city != '전체' else ''} 결과: {len(final_df):,}건")
             
-            # [수정] '업종' 컬럼 제외
+            # [수정] height=None 추가로 표 잘림 방지
             st.dataframe(
                 final_df[['업소명', '상세주소', '지도보기']],
                 use_container_width=True,
+                height=None, 
                 column_config={"지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")},
                 hide_index=True
             )
         else:
-            # 광역은 골랐으나 상세 지역을 아직 안 골랐을 때
             st.write("")
             st.info(f"👉 **{selected_broad}**의 어느 상세 지역을 찾으시나요?")
 
-# 4. 하단 출처 및 안내문구 (수정 일절 없음)
+# 4. 하단 출처 및 안내문구 (불변)
 st.divider()
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
