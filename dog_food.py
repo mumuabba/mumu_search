@@ -100,8 +100,9 @@ if not df.empty:
             
             st.success(f"🔍 {selected_broad} {selected_city if selected_city != '전체' else ''} 결과: {len(final_df):,}건")
             
+            # [수정] '업종' 컬럼 제외
             st.dataframe(
-                final_df[['업소명', '업종', '상세주소', '지도보기']],
+                final_df[['업소명', '상세주소', '지도보기']],
                 use_container_width=True,
                 column_config={"지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")},
                 hide_index=True
