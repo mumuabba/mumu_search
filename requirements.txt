@@ -1,0 +1,4 @@
+streamlit
+requests
+pandas
+Pillow # <- 이 줄이 꼭 들어가야 배포 서버에서도 사진이 돌아갑니다!
