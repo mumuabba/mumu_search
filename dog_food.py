@@ -19,7 +19,7 @@ except:
     st.error("설정(Secrets)에서 AUTH_KEY를 찾을 수 없습니다.")
     st.stop()
 
-# [유틸리티] 네이버 지도 링크
+# [유틸리티] 네이버 지도 링크 생성
 def create_naver_link(row):
     base_url = "https://map.naver.com/v5/search/"
     addr = str(row.get('상세주소', ''))
@@ -39,7 +39,7 @@ def load_data():
 
 df = load_data()
 
-# 2. 사용자 인터페이스 (키보드 방지 클릭형 UI)
+# 2. 사용자 인터페이스
 if not df.empty:
     df['지도보기'] = df.apply(create_naver_link, axis=1)
     def get_broad_region(addr):
@@ -47,7 +47,7 @@ if not df.empty:
         return parts[0] if len(parts) > 0 else "미분류"
     df['지역'] = df['상세주소'].apply(get_broad_region)
 
-    # 헤더 섹션
+    # 헤더 섹션 (사진과 제목)
     col_img, col_txt = st.columns([0.3, 0.7])
     with col_img:
         if os.path.exists("mumu.jpg"):
@@ -63,39 +63,35 @@ if not df.empty:
 
     st.divider()
 
-    # [핵심] 키보드 안 뜨게 radio 버튼으로 지역 선택 (가로 배치)
-    st.markdown("#### 📍 1. 광역 지역 선택")
+    # 메인 화면 상단 지역 선택 (박스 형태 유지)
+    st.markdown("#### 📍 지역을 선택해 주세요")
     broad_regions = sorted([r for r in df["지역"].unique() if r not in ["미분류", "nan", "None"]])
     
-    # 가로로 깔끔하게 배치하기 위해 수평 라디오 사용
-    selected_broad = st.radio(
-        "광역 지역을 선택하세요",
-        ["선택 전"] + broad_regions,
-        index=0,
-        horizontal=True, # 가로 배치! (자판 안 뜸)
-        label_visibility="collapsed"
-    )
+    c1, c2 = st.columns(2)
+    with c1:
+        # selectbox 사용 (디자인 유지)
+        selected_broad = st.selectbox(
+            "1. 광역 선택", 
+            ["지역을 선택하세요"] + broad_regions, 
+            index=0,
+            help="지역을 클릭하여 선택하세요."
+        )
     
     selected_city = "전체"
-    if selected_broad != "선택 전":
-        st.write("---")
-        st.markdown(f"#### 📍 2. {selected_broad} 상세 지역")
-        broad_df = df[df["지역"] == selected_broad].copy()
-        
-        def get_city_safe(addr):
-            parts = str(addr).split()
-            return parts[1] if len(parts) > 1 else "기타"
+    if selected_broad != "지역을 선택하세요":
+        with c2:
+            broad_df = df[df["지역"] == selected_broad].copy()
+            def get_city_safe(addr):
+                parts = str(addr).split()
+                return parts[1] if len(parts) > 1 else "기타"
+            city_list = sorted(list(set(broad_df["상세주소"].apply(get_city_safe).values)))
             
-        city_list = sorted(list(set(broad_df["상세주소"].apply(get_city_safe).values)))
-        
-        # 상세 지역도 클릭형으로 (항목이 많으면 세로로 나올 수 있음)
-        selected_city = st.radio(
-            "상세 지역을 선택하세요",
-            ["전체"] + city_list,
-            index=0,
-            horizontal=True, # 가로 배치! (자판 안 뜸)
-            label_visibility="collapsed"
-        )
+            selected_city = st.selectbox(
+                "2. 상세 지역 선택", 
+                ["전체"] + city_list, 
+                index=0,
+                help="상세 지역을 클릭하여 선택하세요."
+            )
 
         # 결과 출력
         if selected_city == "전체":
@@ -112,9 +108,9 @@ if not df.empty:
             hide_index=True
         )
     else:
-        st.info("지역 버튼을 클릭하시면 맛집 리스트가 바로 나타납니다! 🐾")
+        st.info("박스를 클릭하여 지역을 선택하시면 맛집 리스트가 나타납니다! 🐾")
 
-# 5. 하단 안내문구 (불변)
+# 5. 하단 출처 및 안내문구 (불변)
 st.divider()
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
