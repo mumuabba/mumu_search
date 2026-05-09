@@ -8,10 +8,11 @@ from datetime import datetime
 from PIL import Image
 
 # 1. 페이지 설정
-st.set_page_config(page_title="무무 탐색기 - mumuabba", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="무무 탐색기 - mumuabba", layout="wide")
 
-# [헤더 레이아웃]
+# [헤더 레이아웃] 무무 사진(90도 회전)과 제목
 col1, col2 = st.columns([0.2, 0.8])
+
 with col1:
     if os.path.exists("mumu.jpg"):
         try:
@@ -29,12 +30,14 @@ with col2:
 
 CACHE_FILE = "pet_data_cache.json"
 
+# [보안] Secrets 호출
 try:
     auth_key = st.secrets["AUTH_KEY"]
 except:
     st.error("설정(Secrets)에서 AUTH_KEY를 찾을 수 없습니다.")
     st.stop()
 
+# [유틸리티] 네이버 지도 링크
 def create_naver_link(row):
     base_url = "https://map.naver.com/v5/search/"
     addr = str(row.get('상세주소', ''))
@@ -43,21 +46,18 @@ def create_naver_link(row):
     query = f"{city} {row.get('업소명', '')}"
     return f"{base_url}{urllib.parse.quote(query)}"
 
-# 2. 데이터 로드
-@st.cache_data
-def load_data():
-    if os.path.exists(CACHE_FILE):
-        try:
-            with open(CACHE_FILE, 'r', encoding='utf-8') as f:
-                return pd.DataFrame(json.load(f))
-        except:
-            return pd.DataFrame()
-    return pd.DataFrame()
+# 2. 데이터 로드 로직
+df = None
+if os.path.exists(CACHE_FILE):
+    try:
+        with open(CACHE_FILE, 'r', encoding='utf-8') as f:
+            cache_data = json.load(f)
+            df = pd.DataFrame(cache_data)
+    except:
+        st.error("데이터 파일을 읽는 중 오류가 발생했습니다.")
 
-df = load_data()
-
-# 3. 사용자 인터페이스
-if not df.empty:
+# 3. 사용자 인터페이스 (타이핑 방지 클릭형 UI)
+if df is not None and not df.empty:
     df['지도보기'] = df.apply(create_naver_link, axis=1)
     
     def get_broad_region(addr):
@@ -66,16 +66,22 @@ if not df.empty:
 
     df['지역'] = df['상세주소'].apply(get_broad_region)
 
-    # 사이드바 설정
     with st.sidebar:
         st.header("📍 지역 필터")
         broad_regions = sorted([r for r in df["지역"].unique() if r not in ["미분류", "nan", "None"]])
         
-        # 광역 선택
-        selected_broad = st.selectbox("1. 광역 선택", ["지역을 선택하세요"] + broad_regions, index=0)
+        # [수정] 광역 선택 시 자판이 뜨지 않도록 Radio 버튼(클릭형) 적용
+        st.write("**1. 광역 선택**")
+        selected_broad = st.radio(
+            "광역을 골라주세요", 
+            ["지역을 선택하세요"] + broad_regions, 
+            index=0,
+            label_visibility="collapsed"
+        )
         
         selected_city = "전체"
         if selected_broad != "지역을 선택하세요":
+            st.write("---")
             broad_df = df[df["지역"] == selected_broad].copy()
             
             def get_city_safe(addr):
@@ -84,8 +90,9 @@ if not df.empty:
                 
             city_list = sorted(list(set(broad_df["상세주소"].apply(get_city_safe).values)))
             
-            # 상세 지역 선택 (타이핑 방지를 위해 드롭다운 집중)
-            selected_city = st.selectbox("2. 상세 지역 선택", ["전체"] + city_list, index=0)
+            # 2단계 상세 지역 선택
+            st.write(f"**2. {selected_broad} 상세 지역**")
+            selected_city = st.selectbox("상세 지역 선택", ["전체"] + city_list)
 
     # 4. 결과 화면 제어
     if selected_broad == "지역을 선택하세요":
@@ -93,7 +100,6 @@ if not df.empty:
         st.info("👈 왼쪽 사이드바에서 **지역을 선택**하시면 식당 리스트가 나타납니다!")
         st.success("무무와 함께 행복한 나들이를 계획해 보세요! 🐾")
     else:
-        # 지역 설정이 완료되면 사이드바를 접도록 안내 (모바일은 자동으로 접히는 효과 유도)
         broad_df = df[df["지역"] == selected_broad].copy()
         
         def get_city_safe(addr):
@@ -106,18 +112,19 @@ if not df.empty:
             final_df = broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
         
         st.subheader(f"📍 {selected_broad} {selected_city if selected_city != '전체' else ''} 결과 ({len(final_df):,}건)")
-        
-        # 모바일 가독성을 위해 테이블 출력 전 안내
-        st.caption("💡 지도는 표를 오른쪽으로 밀어서 확인하세요.")
+        st.caption("💡 표를 오른쪽으로 밀면 네이버 지도 링크를 확인할 수 있습니다.")
 
+        # 테이블 표시
         st.dataframe(
             final_df[['업소명', '업종', '상세주소', '지도보기']],
             use_container_width=True,
-            column_config={"지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")},
+            column_config={
+                "지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")
+            },
             hide_index=True
         )
 
-# 5. 하단 안내문구
+# 5. 하단 출처 및 안내문구 (수정 없이 이전 버전 그대로 유지)
 st.divider()
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
