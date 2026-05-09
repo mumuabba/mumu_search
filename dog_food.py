@@ -19,7 +19,7 @@ except:
     st.error("설정(Secrets)에서 AUTH_KEY를 찾을 수 없습니다.")
     st.stop()
 
-# [유틸리티] 네이버 지도 링크 생성
+# [유틸리티] 네이버 지도 링크
 def create_naver_link(row):
     base_url = "https://map.naver.com/v5/search/"
     addr = str(row.get('상세주소', ''))
@@ -39,7 +39,7 @@ def load_data():
 
 df = load_data()
 
-# 2. 사용자 인터페이스
+# 2. 사용자 인터페이스 (키보드 안 뜨는 Pills UI)
 if not df.empty:
     df['지도보기'] = df.apply(create_naver_link, axis=1)
     def get_broad_region(addr):
@@ -47,70 +47,71 @@ if not df.empty:
         return parts[0] if len(parts) > 0 else "미분류"
     df['지역'] = df['상세주소'].apply(get_broad_region)
 
-    # 헤더 섹션 (사진과 제목)
-    col_img, col_txt = st.columns([0.3, 0.7])
-    with col_img:
-        if os.path.exists("mumu.jpg"):
-            try:
-                img = Image.open("mumu.jpg")
-                rotated_img = img.rotate(-90, expand=True) 
-                st.image(rotated_img, width=120)
-            except: st.write("🐶")
-        else: st.write("🐶")
-    with col_txt:
-        st.markdown("## 무무 탐색기")
-        st.caption("전국 반려동물 동반 식당 정보 서비스")
-
-    st.divider()
-
-    # 메인 화면 상단 지역 선택 (박스 형태 유지)
-    st.markdown("#### 📍 지역을 선택해 주세요")
+    # [수정] 지역 선택창을 사진보다 위로 올렸습니다 (화면 튐 방지)
+    st.markdown("#### 📍 어디로 가시나요?")
     broad_regions = sorted([r for r in df["지역"].unique() if r not in ["미분류", "nan", "None"]])
     
-    c1, c2 = st.columns(2)
-    with c1:
-        # selectbox 사용 (디자인 유지)
-        selected_broad = st.selectbox(
-            "1. 광역 선택", 
-            ["지역을 선택하세요"] + broad_regions, 
-            index=0,
-            help="지역을 클릭하여 선택하세요."
-        )
+    # [핵심] st.pills 사용 - 자판이 절대 안 뜨고 박스 형태로 깔끔함
+    selected_broad = st.pills(
+        "1. 광역 선택", 
+        broad_regions, 
+        selection_mode="single",
+        label_visibility="collapsed"
+    )
     
     selected_city = "전체"
-    if selected_broad != "지역을 선택하세요":
-        with c2:
-            broad_df = df[df["지역"] == selected_broad].copy()
-            def get_city_safe(addr):
-                parts = str(addr).split()
-                return parts[1] if len(parts) > 1 else "기타"
-            city_list = sorted(list(set(broad_df["상세주소"].apply(get_city_safe).values)))
-            
-            selected_city = st.selectbox(
-                "2. 상세 지역 선택", 
-                ["전체"] + city_list, 
-                index=0,
-                help="상세 지역을 클릭하여 선택하세요."
-            )
-
-        # 결과 출력
-        if selected_city == "전체":
-            final_df = broad_df
-        else:
-            final_df = broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
+    if selected_broad:
+        st.write("---")
+        broad_df = df[df["지역"] == selected_broad].copy()
+        def get_city_safe(addr):
+            parts = str(addr).split()
+            return parts[1] if len(parts) > 1 else "기타"
+        city_list = sorted(list(set(broad_df["상세주소"].apply(get_city_safe).values)))
         
-        st.success(f"🔍 {selected_broad} {selected_city if selected_city != '전체' else ''} 검색 결과: {len(final_df):,}건")
-        
-        st.dataframe(
-            final_df[['업소명', '업종', '상세주소', '지도보기']],
-            use_container_width=True,
-            column_config={"지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")},
-            hide_index=True
+        st.markdown(f"#### 📍 {selected_broad} 상세 지역")
+        selected_city = st.pills(
+            "2. 상세 지역 선택", 
+            ["전체"] + city_list, 
+            selection_mode="single",
+            label_visibility="collapsed"
         )
-    else:
-        st.info("박스를 클릭하여 지역을 선택하시면 맛집 리스트가 나타납니다! 🐾")
 
-# 5. 하단 출처 및 안내문구 (불변)
+        # 결과 출력 섹션
+        if selected_city:
+            # 헤더(사진)를 결과 위에 배치
+            col_img, col_txt = st.columns([0.3, 0.7])
+            with col_img:
+                if os.path.exists("mumu.jpg"):
+                    try:
+                        img = Image.open("mumu.jpg")
+                        rotated_img = img.rotate(-90, expand=True) 
+                        st.image(rotated_img, width=100)
+                    except: st.write("🐶")
+            with col_txt:
+                st.markdown("### 무무 탐색기")
+                st.caption(f"{selected_broad} {selected_city if selected_city != '전체' else ''} 맛집")
+
+            if selected_city == "전체":
+                final_df = broad_df
+            else:
+                final_df = broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
+            
+            st.success(f"🔍 검색 결과: {len(final_df):,}건")
+            st.dataframe(
+                final_df[['업소명', '업종', '상세주소', '지도보기']],
+                use_container_width=True,
+                column_config={"지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")},
+                hide_index=True
+            )
+    else:
+        # 아무것도 선택 안 했을 때 무무 사진 크게 보여주기
+        st.write("---")
+        if os.path.exists("mumu.jpg"):
+            img = Image.open("mumu.jpg").rotate(-90, expand=True)
+            st.image(img, width=200)
+        st.info("지역 버튼을 누르면 무무가 맛집을 찾아드려요! 🐾")
+
+# 5. 하단 안내문구 (불변)
 st.divider()
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
