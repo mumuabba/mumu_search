@@ -20,33 +20,14 @@ hide_style = """
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     header { visibility: hidden; }
-    .block-container { padding: 1rem 1rem; } /* 모바일 여백 최적화 */
+    .block-container { padding: 1rem 1rem; }
     
-    table { 
-        width: 100%; 
-        border-collapse: collapse; 
-        margin-top: 10px; 
-        table-layout: fixed; /* 컬럼 너비 고정 */
-    }
-    th { 
-        background-color: rgba(128, 128, 128, 0.15); 
-        text-align: left; 
-        padding: 10px; 
-        font-size: 0.85rem;
-        border-bottom: 2px solid rgba(128, 128, 128, 0.3);
-    }
-    td { 
-        padding: 12px 8px; 
-        border-bottom: 1px solid rgba(128, 128, 128, 0.1); 
-        font-size: 0.88rem;
-        word-break: break-all; /* 긴 이름 줄바꿈 */
-        vertical-align: middle;
-    }
-    a { 
-        text-decoration: none; 
-        color: #4dabff; 
-        font-weight: bold; 
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+    th { background-color: rgba(128, 128, 128, 0.15); text-align: left; padding: 10px; font-size: 0.85rem; border-bottom: 2px solid rgba(128, 128, 128, 0.3); }
+    td { padding: 12px 8px; border-bottom: 1px solid rgba(128, 128, 128, 0.1); font-size: 0.88rem; word-break: break-all; vertical-align: middle; }
+    a { text-decoration: none; color: #4dabff; font-weight: bold; }
+    /* 카운터 배지 중앙 정렬 스타일 */
+    .counter-wrapper { text-align: center; padding: 20px 0; }
     </style>
 """
 st.markdown(hide_style, unsafe_allow_html=True)
@@ -112,10 +93,8 @@ if not df.empty:
             final_df = broad_df if selected_city == "전체" else broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
             st.success(f"🔍 {len(final_df):,}건 검색됨")
             
-            # 💡 [주소 다이어트 로직] 선택된 지역명을 주소에서 제거
             def shorten_address(addr, broad, city):
                 addr_str = str(addr)
-                # 광역/시군구 명칭 제거 (예: '강원특별자치도 원주시 ' 삭제)
                 remove_target = f"{broad} {city}" if city != "전체" else broad
                 return addr_str.replace(remove_target, "").strip()
 
@@ -123,17 +102,15 @@ if not df.empty:
                 return f'<a href="{link}" target="_blank">{name}</a>'
 
             display_df = final_df.copy()
-            # 주소 줄이기 적용
             display_df['표시주소'] = display_df.apply(lambda x: shorten_address(x['상세주소'], selected_broad, selected_city), axis=1)
             display_df['업소명'] = display_df.apply(lambda x: make_clickable(x['업소명'], x['카카오맵']), axis=1)
 
-            # HTML 테이블 생성 (너비 비율 조정)
             table_html = f"""
             <table>
                 <thead>
                     <tr>
                         <th style="width: 45%;">업소명</th>
-                        <th style="width: 55%;">상세 주소 (이하)</th>
+                        <th style="width: 55%;">상세 주소</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -143,13 +120,25 @@ if not df.empty:
             """
             st.markdown(table_html, unsafe_allow_html=True)
 
-# 4. 하단 고지
-st.divider()
+# 4. 하단 카운터 및 안내 고지
+st.write("---")
+
+# 💡 실시간 조회수 카운터 배지 (중앙 정렬)
+# 성훈님의 앱 주소인 mumu-search.streamlit.app을 기준으로 카운트합니다.
+st.markdown(
+    """
+    <div class="counter-wrapper">
+        <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fmumu-search.streamlit.app&count_bg=%234DABFF&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Today+Views&edge_flat=false" alt="Hits">
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
+
 st.markdown(f"""
-    <div style="font-size: 0.8rem; color: #666; text-align: center; line-height: 1.6; background-color: rgba(128, 128, 128, 0.05); padding: 20px; border-radius: 10px;">
+    <div style="font-size: 0.8rem; color: #666; text-align: center; line-height: 1.6; background-color: rgba(128, 128, 128, 0.05); padding: 20px; border-radius: 10px; border: 1px solid rgba(128, 128, 128, 0.1);">
         <p style="font-size: 0.9rem; color: inherit;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
-        본 서비스는 반려동물 동반 식당 정보를 편리하게 확인하기 위한 단순 정보 제공 서비스입니다.<br>
-        <span style="color: #d32f2f;"><b>정확한 정보 확인을 위해 방문 전 반드시 유선 문의 바랍니다.</b></span><br><br>
+        본 서비스는 반려동물을 가족으로 키우는 반려인의 마음으로, 전국의 동반 가능 식당 정보를 편리하게 확인하기 위해 제작되었습니다.<br>
+        <span style="color: #d32f2f;"><b>정확한 정보 확인을 위해 방문 전 반드시 해당 업소에 유선 확인을 부탁드립니다.</b></span><br><br>
         ⓒ 2026. <b>mumuabba</b>. All rights reserved.
     </div>
 """, unsafe_allow_html=True)
