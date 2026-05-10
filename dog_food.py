@@ -40,7 +40,7 @@ if not df.empty:
 
     # 헤더 섹션
     st.markdown("### 🐶 무무 탐색기 : 전국 동반 식당")
-    st.caption("반려동물을 사랑하는 마음으로 만든 비영리 정보 서비스")
+    st.caption("반려동물을 사랑하는 마음으로 만든 정보 제공 서비스")
     
     # 마지막 업데이트 시간 표시
     last_update = df['수집날짜'].iloc[0] if '수집날짜' in df.columns else "정보 없음"
