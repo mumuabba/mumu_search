@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import os
 import urllib.parse
+import time  # 💡 NameError 해결을 위해 time 라이브러리를 명시적으로 추가!
 from PIL import Image
 
 # 1. 페이지 설정 및 보안 UI 숨김
@@ -65,7 +66,6 @@ if not df.empty:
     df['지역'] = df['상세주소'].apply(get_region)
     df['카카오맵'] = df.apply(create_kakao_link, axis=1)
 
-    # 💡 수정된 타이틀 부분
     st.markdown('<p class="main-title">🐶 무무 탐색기</p>', unsafe_allow_html=True)
     st.markdown('<p class="main-subtitle">식품의약품안전처에 등록된 반려동물 동반 음식점 검색기</p>', unsafe_allow_html=True)
     
@@ -125,11 +125,10 @@ if not df.empty:
             """
             st.markdown(table_html, unsafe_allow_html=True)
 
-# 4. 하단 안내 고지 및 카운터
+# 4. 하단 안내 고지 및 범용 카운터
 st.write("---")
 
-# 💡 외부 웹사이트(Streamlit)에서도 정상 작동하는 범용 카운터 서비스로 URL 교체
-# 고유 식별 URL 지정 및 브라우저 캐싱 방지를 위해 끝에 시간값(&t)을 추가합니다.
+# 💡 범용 카운터 hitscounter.dev 적용 (time.time()으로 매번 실시간 갱신)
 counter_url = f"https://hitscounter.dev/api/count/incr/badge.svg?url=https%3A%2F%2Fmumuabba-search.streamlit.app&title=Mumu+Friends&t={time.time()}"
 
 st.markdown(
@@ -141,7 +140,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 💡 수정된 안내 문구 부분
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: rgba(128, 128, 128, 0.05); padding: 25px; border-radius: 12px; border: 1px solid rgba(128, 128, 128, 0.1);">
         <p style="font-size: 1rem; color: inherit;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
