@@ -13,43 +13,39 @@ st.set_page_config(
     menu_items={'Get Help': None, 'Report a bug': None, 'About': None}
 )
 
-# 2. 우측 상단 메뉴 숨김 및 다크모드 최적화 CSS
+# 2. 우측 상단 메뉴 숨김 및 모바일 최적화 CSS
 hide_style = """
     <style>
-    /* 기본 UI 요소 숨김 */
     .viewerBadge_container__1QS1n { display: none !important; }
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     header { visibility: hidden; }
-    .block-container { padding-top: 2rem; }
+    .block-container { padding: 1rem 1rem; } /* 모바일 여백 최적화 */
     
-    /* 다크/라이트 모드 자동 대응 테이블 디자인 */
     table { 
         width: 100%; 
         border-collapse: collapse; 
         margin-top: 10px; 
-        color: inherit; /* 시스템 글자색 상속 */
+        table-layout: fixed; /* 컬럼 너비 고정 */
     }
     th { 
         background-color: rgba(128, 128, 128, 0.15); 
         text-align: left; 
-        padding: 12px; 
+        padding: 10px; 
+        font-size: 0.85rem;
         border-bottom: 2px solid rgba(128, 128, 128, 0.3);
     }
     td { 
-        padding: 12px; 
-        border-bottom: 1px solid rgba(128, 128, 128, 0.15); 
-        font-size: 0.95rem;
-        background-color: transparent; /* 배경을 투명하게 해서 시스템 테마 유지 */
+        padding: 12px 8px; 
+        border-bottom: 1px solid rgba(128, 128, 128, 0.1); 
+        font-size: 0.88rem;
+        word-break: break-all; /* 긴 이름 줄바꿈 */
+        vertical-align: middle;
     }
-    /* 링크 색상을 밝은 하늘색으로 설정 (다크모드에서도 잘 보이게) */
     a { 
         text-decoration: none; 
         color: #4dabff; 
         font-weight: bold; 
-    }
-    a:hover { 
-        text-decoration: underline; 
     }
     </style>
 """
@@ -57,7 +53,6 @@ st.markdown(hide_style, unsafe_allow_html=True)
 
 CACHE_FILE = "pet_data_cache.json"
 
-# [유틸리티] 카카오맵 검색 링크 생성
 def create_kakao_link(row):
     base_url = "https://map.kakao.com/link/search/"
     addr = str(row.get('상세주소', ''))
@@ -72,13 +67,11 @@ def load_data():
         try:
             with open(CACHE_FILE, 'r', encoding='utf-8') as f:
                 return pd.DataFrame(json.load(f))
-        except:
-            return pd.DataFrame()
+        except: return pd.DataFrame()
     return pd.DataFrame()
 
 df = load_data()
 
-# 3. 메인 서비스 로직
 if not df.empty:
     def get_broad_region(addr):
         parts = str(addr).split()
@@ -87,15 +80,13 @@ if not df.empty:
     df['지역'] = df['상세주소'].apply(get_broad_region)
     df['카카오맵'] = df.apply(create_kakao_link, axis=1)
 
-    st.markdown("### 🐶 무무 탐색기 : 전국 동반 식당")
-    st.caption("업소명을 클릭하면 카카오맵으로 연결됩니다. 🗺️")
+    st.markdown("### 🐶 무무 탐색기")
+    st.caption("이름을 클릭하면 지도로 연결됩니다. 🗺️")
     
     last_update = df['수집날짜'].iloc[0] if '수집날짜' in df.columns else "정보 없음"
-    st.info(f"⏱️ **최종 정보 갱신 일자:** {last_update} (매일 새벽 1시 자동 갱신)")
-    st.write("---")
+    st.info(f"⏱️ **업데이트:** {last_update}")
 
     # 1단계: 광역 지역 선택
-    st.markdown("#### 📍 1. 광역 지역 선택")
     broad_regions = sorted([r for r in df["지역"].unique() if r not in ["미분류", "nan", "None"]])
     selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
     
@@ -103,14 +94,11 @@ if not df.empty:
         if os.path.exists("mumu.jpg"):
             try:
                 img = Image.open("mumu.jpg").rotate(-90, expand=True)
-                st.image(img, width=250)
-            except:
-                st.write("🐶")
-        st.info("위의 **지역 버튼**을 클릭하여 탐색을 시작하세요! 🐾")
+                st.image(img, width=200)
+            except: st.write("🐶")
+        st.info("지역을 선택해 주세요!")
     else:
-        st.write("---")
         # 2단계: 상세 지역 선택
-        st.markdown(f"#### 📍 2. {selected_broad} 상세 지역")
         broad_df = df[df["지역"] == selected_broad].copy()
         
         def get_city_safe(addr):
@@ -122,28 +110,46 @@ if not df.empty:
 
         if selected_city:
             final_df = broad_df if selected_city == "전체" else broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
-            st.success(f"🔍 검색 결과: {len(final_df):,}건 (업소명 클릭 시 지도 이동)")
+            st.success(f"🔍 {len(final_df):,}건 검색됨")
             
-            # HTML 테이블 생성 (새로고침 방지용 target="_blank" 적용)
+            # 💡 [주소 다이어트 로직] 선택된 지역명을 주소에서 제거
+            def shorten_address(addr, broad, city):
+                addr_str = str(addr)
+                # 광역/시군구 명칭 제거 (예: '강원특별자치도 원주시 ' 삭제)
+                remove_target = f"{broad} {city}" if city != "전체" else broad
+                return addr_str.replace(remove_target, "").strip()
+
             def make_clickable(name, link):
                 return f'<a href="{link}" target="_blank">{name}</a>'
 
             display_df = final_df.copy()
+            # 주소 줄이기 적용
+            display_df['표시주소'] = display_df.apply(lambda x: shorten_address(x['상세주소'], selected_broad, selected_city), axis=1)
             display_df['업소명'] = display_df.apply(lambda x: make_clickable(x['업소명'], x['카카오맵']), axis=1)
 
-            # HTML 테이블 렌더링
-            table_html = display_df[['업소명', '상세주소']].to_html(escape=False, index=False)
+            # HTML 테이블 생성 (너비 비율 조정)
+            table_html = f"""
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">업소명</th>
+                        <th style="width: 55%;">상세 주소 (이하)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {"".join([f"<tr><td>{row['업소명']}</td><td>{row['표시주소']}</td></tr>" for _, row in display_df.iterrows()])}
+                </tbody>
+            </table>
+            """
             st.markdown(table_html, unsafe_allow_html=True)
 
-# 4. 하단 안내 및 책임 한계 고지
+# 4. 하단 고지
 st.divider()
 st.markdown(f"""
-    <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: rgba(128, 128, 128, 0.05); padding: 25px; border-radius: 12px; border: 1px solid rgba(128, 128, 128, 0.1);">
-        <p style="font-size: 1rem; color: inherit;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
-        본 서비스는 <b>반려동물을 가족으로 키우는 반려인의 마음으로, 전국의 동반 가능 식당 정보를 보다 쉽고 편리하게 확인하기 위한 단순 정보 제공 목적으로 제작되었습니다.</b><br>
-        식품의약품안전처에서 제공하는 Open-API를 활용한 정보 서비스임을 밝힙니다.<br><br>
-        데이터는 <b>매일 새벽 1시</b>에 자동으로 최신화됩니다.<br>
-        <span style="color: #d32f2f;"><b>정확한 정보 확인을 위해 방문 전 반드시 해당 업소에 유선으로 영업 여부를 확인해 주시기 바랍니다.</b></span><br><br>
-        ⓒ 2026. <b>mumuabba</b>. All rights reserved. | 출처: 식품의약품안전처 식품안전나라
+    <div style="font-size: 0.8rem; color: #666; text-align: center; line-height: 1.6; background-color: rgba(128, 128, 128, 0.05); padding: 20px; border-radius: 10px;">
+        <p style="font-size: 0.9rem; color: inherit;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
+        본 서비스는 반려동물 동반 식당 정보를 편리하게 확인하기 위한 단순 정보 제공 서비스입니다.<br>
+        <span style="color: #d32f2f;"><b>정확한 정보 확인을 위해 방문 전 반드시 유선 문의 바랍니다.</b></span><br><br>
+        ⓒ 2026. <b>mumuabba</b>. All rights reserved.
     </div>
 """, unsafe_allow_html=True)
