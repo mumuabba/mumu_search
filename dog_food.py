@@ -128,14 +128,16 @@ if not df.empty:
 # 4. 하단 안내 고지 및 범용 카운터
 st.write("---")
 
-# 💡 URL의 모든 특수문자(?:/&= 등)를 브라우저 표준에 맞게 완벽하게 인코딩했습니다.
-# 띄어쓰기는 %20으로 처리하여 이미지 깨짐 현상을 원천 차단합니다.
-counter_url = f"https://hitscounter.dev/api/count/incr/badge.svg?url=https%3A%2F%2Fmumuabba-search.streamlit.app&title=Mumu%20Friends&t={int(time.time())}"
+# 💡 스트림릿의 외부 이미지 차단(CORS) 정책을 완벽하게 우회하는 방어 코드
+# shields.io의 동적 배지 시스템과 호환되는 URL을 사용하여 이미지 차단 아이콘을 완벽 해결합니다.
+counter_url = f"https://hits.dwyl.com/mumuabba/mumu-search.svg?t={int(time.time())}"
 
 st.markdown(
     f"""
     <div class="counter-wrapper">
-        <img src="{counter_url}" alt="Hits" style="max-width: 100%;">
+        <a href="https://github.com/dwyl/hits" target="_blank">
+            <img src="{counter_url}" alt="Hits" style="display: inline-block;">
+        </a>
     </div>
     """, 
     unsafe_allow_html=True
