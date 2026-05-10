@@ -26,8 +26,7 @@ hide_style = """
     th { background-color: rgba(128, 128, 128, 0.15); text-align: left; padding: 10px; font-size: 0.85rem; border-bottom: 2px solid rgba(128, 128, 128, 0.3); }
     td { padding: 12px 8px; border-bottom: 1px solid rgba(128, 128, 128, 0.1); font-size: 0.88rem; word-break: break-all; vertical-align: middle; }
     a { text-decoration: none; color: #4dabff; font-weight: bold; }
-    /* 카운터 배지 중앙 정렬 스타일 */
-    .counter-wrapper { text-align: center; padding: 20px 0; }
+    .counter-wrapper { text-align: center; padding: 15px 0; }
     </style>
 """
 st.markdown(hide_style, unsafe_allow_html=True)
@@ -120,25 +119,26 @@ if not df.empty:
             """
             st.markdown(table_html, unsafe_allow_html=True)
 
-# 4. 하단 카운터 및 안내 고지
+# 4. 하단 카운터 및 안내 고지 (이전 문구 그대로 복구)
 st.write("---")
 
-# 💡 실시간 조회수 카운터 배지 (중앙 정렬)
-# 성훈님의 앱 주소인 mumu-search.streamlit.app을 기준으로 카운트합니다.
+# 실시간 조회수 카운터 배지
 st.markdown(
     """
     <div class="counter-wrapper">
-        <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fmumu-search.streamlit.app&count_bg=%234DABFF&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Today+Views&edge_flat=false" alt="Hits">
+        <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fmumu-search.streamlit.app&count_bg=%234DABFF&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Total+Views&edge_flat=false" alt="Hits">
     </div>
     """, 
     unsafe_allow_html=True
 )
 
 st.markdown(f"""
-    <div style="font-size: 0.8rem; color: #666; text-align: center; line-height: 1.6; background-color: rgba(128, 128, 128, 0.05); padding: 20px; border-radius: 10px; border: 1px solid rgba(128, 128, 128, 0.1);">
-        <p style="font-size: 0.9rem; color: inherit;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
-        본 서비스는 반려동물을 가족으로 키우는 반려인의 마음으로, 전국의 동반 가능 식당 정보를 편리하게 확인하기 위해 제작되었습니다.<br>
-        <span style="color: #d32f2f;"><b>정확한 정보 확인을 위해 방문 전 반드시 해당 업소에 유선 확인을 부탁드립니다.</b></span><br><br>
-        ⓒ 2026. <b>mumuabba</b>. All rights reserved.
+    <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: rgba(128, 128, 128, 0.05); padding: 25px; border-radius: 12px; border: 1px solid rgba(128, 128, 128, 0.1);">
+        <p style="font-size: 1rem; color: inherit;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
+        본 서비스는 <b>반려동물을 가족으로 키우는 반려인의 마음으로, 전국의 동반 가능 식당 정보를 보다 쉽고 편리하게 확인하기 위한 단순 정보 제공 목적으로 제작되었습니다.</b><br>
+        식품의약품안전처에서 제공하는 Open-API를 활용한 정보 서비스임을 밝힙니다.<br><br>
+        데이터는 <b>매일 새벽 1시</b>에 자동으로 최신화됩니다.<br>
+        <span style="color: #d32f2f;"><b>정확한 정보 확인을 위해 방문 전 반드시 해당 업소에 유선으로 영업 여부를 확인해 주시기 바랍니다.</b></span><br><br>
+        ⓒ 2026. <b>mumuabba</b>. All rights reserved. | 출처: 식품의약품안전처 식품안전나라
     </div>
 """, unsafe_allow_html=True)
