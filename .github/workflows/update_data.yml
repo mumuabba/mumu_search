@@ -28,7 +28,7 @@ jobs:
           pip install pandas requests
 
       - name: Run Data Collector
-        run: python collect_data.py  # 👈 실행할 파이썬 파일명이 맞는지 꼭 확인하세요!
+        run: python update_script.py  # 👈 실행할 파이썬 파일명이 맞는지 꼭 확인하세요!
 
       - name: Commit and Push changes
         run: |
