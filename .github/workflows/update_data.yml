@@ -1,0 +1,33 @@
+name: Daily Data Update
+
+on:
+  schedule:
+    - cron: '0 16 * * *' # 한국시간 새벽 1시 (UTC 16시는 한국 새벽 1시입니다)
+  workflow_dispatch: # 이 문구가 있어야 우리가 원할 때 수동으로 '실행' 버튼을 누를 수 있어요
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: pip install requests pandas
+        
+      - name: Run update script
+        env:
+          AUTH_KEY: ${{ secrets.AUTH_KEY }} # 4단계에서 설정할 비밀키를 가져다 씁니다
+        run: python update_script.py
+        
+      - name: Commit and Push
+        run: |
+          git config --global user.name "mumuabba"
+          git config --global user.email "mumuabba@github.com"
+          git add pet_data_cache.json
+          git commit -m "Auto update data: $(date)" || echo "No changes to commit"
+          git push
