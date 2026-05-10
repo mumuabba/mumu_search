@@ -54,8 +54,11 @@ if not df.empty:
     
     if not selected_broad:
         if os.path.exists("mumu.jpg"):
-            img = Image.open("mumu.jpg").rotate(-90, expand=True)
-            st.image(img, width=250)
+            try:
+                img = Image.open("mumu.jpg").rotate(-90, expand=True)
+                st.image(img, width=250)
+            except:
+                st.write("🐶")
         st.info("위의 **지역 버튼**을 클릭하여 탐색을 시작하세요! 🐾")
     else:
         st.write("---")
@@ -77,7 +80,7 @@ if not df.empty:
                 column_config={"지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")}
             )
 
-# 4. 하단 안내문구 (불변)
+# 4. 하단 안내문구
 st.divider()
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
@@ -86,7 +89,6 @@ st.markdown(f"""
         공공데이터법에 의거하여 <b>식품의약품안전처</b>에서 제공하는 Open-API를 활용한 <b>비영리 목적의 사이트</b>임을 밝힙니다.<br><br>
         데이터는 <b>매일 새벽 1시</b>에 자동으로 최신화됩니다.<br>
         <span style="color: #d32f2f;"><b>정확한 정보 확인을 위해 방문 전 반드시 해당 업소에 유선으로 영업 여부를 확인해 주시기 바랍니다.</b></span><br>
-        본 서비스의 정보를 활용한 결과로 발생하는 사항에 대해 운영자는 법적 책임을 지지 않습니다.<br><br>
         ⓒ 2026. <b>mumuabba</b>. All rights reserved. | 출처: 식품의약품안전처 식품안전나라
     </div>
 """, unsafe_allow_html=True)
