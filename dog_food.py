@@ -44,7 +44,7 @@ if not df.empty:
     
     # 마지막 업데이트 시간 표시
     last_update = df['수집날짜'].iloc[0] if '수집날짜' in df.columns else "정보 없음"
-    st.write(f"⏱️ **최종 정보 갱신 일자:** {last_update}")
+    st.info(f"⏱️ **최종 정보 갱신 일자:** {last_update} (매일 새벽 1시 자동 갱신)")
     st.write("---")
 
     # 지역 선택 필터
@@ -77,7 +77,7 @@ if not df.empty:
                 column_config={"지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")}
             )
 
-# 4. 하단 안내문구
+# 4. 하단 안내문구 (불변)
 st.divider()
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
