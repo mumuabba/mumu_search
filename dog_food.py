@@ -13,21 +13,44 @@ st.set_page_config(
     menu_items={'Get Help': None, 'Report a bug': None, 'About': None}
 )
 
-# 2. 우측 상단 메뉴 및 깃허브 아이콘 숨김 CSS
+# 2. 우측 상단 메뉴 숨김 및 다크모드 최적화 CSS
 hide_style = """
     <style>
+    /* 기본 UI 요소 숨김 */
     .viewerBadge_container__1QS1n { display: none !important; }
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     header { visibility: hidden; }
     .block-container { padding-top: 2rem; }
-    /* 테이블 스타일링 */
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th { background-color: #f0f2f6; text-align: left; padding: 10px; border-bottom: 2px solid #ddd; }
-    td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.95rem; }
-    tr:hover { background-color: #f9f9f9; }
-    a { text-decoration: none; color: #1f77b4; font-weight: bold; }
-    a:hover { text-decoration: underline; }
+    
+    /* 다크/라이트 모드 자동 대응 테이블 디자인 */
+    table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        margin-top: 10px; 
+        color: inherit; /* 시스템 글자색 상속 */
+    }
+    th { 
+        background-color: rgba(128, 128, 128, 0.15); 
+        text-align: left; 
+        padding: 12px; 
+        border-bottom: 2px solid rgba(128, 128, 128, 0.3);
+    }
+    td { 
+        padding: 12px; 
+        border-bottom: 1px solid rgba(128, 128, 128, 0.15); 
+        font-size: 0.95rem;
+        background-color: transparent; /* 배경을 투명하게 해서 시스템 테마 유지 */
+    }
+    /* 링크 색상을 밝은 하늘색으로 설정 (다크모드에서도 잘 보이게) */
+    a { 
+        text-decoration: none; 
+        color: #4dabff; 
+        font-weight: bold; 
+    }
+    a:hover { 
+        text-decoration: underline; 
+    }
     </style>
 """
 st.markdown(hide_style, unsafe_allow_html=True)
@@ -101,23 +124,22 @@ if not df.empty:
             final_df = broad_df if selected_city == "전체" else broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
             st.success(f"🔍 검색 결과: {len(final_df):,}건 (업소명 클릭 시 지도 이동)")
             
-            # 💡 [핵심] 새로고침 방지를 위한 HTML 링크 생성
+            # HTML 테이블 생성 (새로고침 방지용 target="_blank" 적용)
             def make_clickable(name, link):
-                # target="_blank"를 통해 새 탭에서 열리도록 강제 (Rerun 방지)
                 return f'<a href="{link}" target="_blank">{name}</a>'
 
             display_df = final_df.copy()
             display_df['업소명'] = display_df.apply(lambda x: make_clickable(x['업소명'], x['카카오맵']), axis=1)
 
-            # 데이터프레임 대신 HTML 테이블로 렌더링
+            # HTML 테이블 렌더링
             table_html = display_df[['업소명', '상세주소']].to_html(escape=False, index=False)
             st.markdown(table_html, unsafe_allow_html=True)
 
-# 4. 하단 안내 및 책임 한계 고지 (기존 동일)
+# 4. 하단 안내 및 책임 한계 고지
 st.divider()
 st.markdown(f"""
-    <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
-        <p style="font-size: 1rem; color: #222;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
+    <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: rgba(128, 128, 128, 0.05); padding: 25px; border-radius: 12px; border: 1px solid rgba(128, 128, 128, 0.1);">
+        <p style="font-size: 1rem; color: inherit;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
         본 서비스는 <b>반려동물을 가족으로 키우는 반려인의 마음으로, 전국의 동반 가능 식당 정보를 보다 쉽고 편리하게 확인하기 위한 단순 정보 제공 목적으로 제작되었습니다.</b><br>
         식품의약품안전처에서 제공하는 Open-API를 활용한 정보 서비스임을 밝힙니다.<br><br>
         데이터는 <b>매일 새벽 1시</b>에 자동으로 최신화됩니다.<br>
