@@ -125,9 +125,21 @@ if not df.empty:
             """
             st.markdown(table_html, unsafe_allow_html=True)
 
-# 4. 하단 안내 고지
+# 4. 하단 안내 고지 및 카운터
 st.write("---")
-st.markdown('<div class="counter-wrapper"><img src="https://komarev.com/ghpvc/?username=mumuabba-search&color=4dabff&style=flat-square&label=Mumu%20Friends" alt="Hits"></div>', unsafe_allow_html=True)
+
+# 💡 외부 웹사이트(Streamlit)에서도 정상 작동하는 범용 카운터 서비스로 URL 교체
+# 고유 식별 URL 지정 및 브라우저 캐싱 방지를 위해 끝에 시간값(&t)을 추가합니다.
+counter_url = f"https://hitscounter.dev/api/count/incr/badge.svg?url=https%3A%2F%2Fmumuabba-search.streamlit.app&title=Mumu+Friends&t={time.time()}"
+
+st.markdown(
+    f"""
+    <div class="counter-wrapper">
+        <img src="{counter_url}" alt="Hits">
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
 
 # 💡 수정된 안내 문구 부분
 st.markdown(f"""
