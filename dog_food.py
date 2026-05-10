@@ -127,10 +127,11 @@ if not df.empty:
 # 4. 하단 카운터 및 안내 고지
 st.write("---")
 
+# 💡 [수정된 카운터 섹션] 깨짐 방지를 위해 인코딩을 최적화했습니다.
 st.markdown(
     """
     <div class="counter-wrapper">
-        <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fmumu-search.streamlit.app&count_bg=%234DABFF&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Total+Views&edge_flat=false" alt="Hits">
+        <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fmumu-search.streamlit.app&count_bg=%234DABFF&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Views&edge_flat=false" alt="Hits">
     </div>
     """, 
     unsafe_allow_html=True
