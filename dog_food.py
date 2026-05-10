@@ -22,13 +22,12 @@ hide_style = """
     header { visibility: hidden; }
     .block-container { padding: 1.5rem 1rem; }
     
-    /* 타이틀 및 설명 스타일 */
     .main-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 0.2rem; }
     .main-subtitle { font-size: 1rem; color: #888; margin-bottom: 1.5rem; }
     
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; color: inherit; }
     th { background-color: rgba(128, 128, 128, 0.15); text-align: left; padding: 10px; font-size: 0.85rem; border-bottom: 2px solid rgba(128, 128, 128, 0.3); }
-    td { padding: 12px 8px; border-bottom: 1px solid rgba(128, 128, 128, 0.1); font-size: 0.88rem; word-break: break-all; vertical-align: middle; }
+    td { padding: 12px 8px; border-bottom: 1px solid rgba(128, 128, 128, 0.1); font-size: 0.88rem; word-break: break-all; vertical-align: middle; background-color: transparent; }
     a { text-decoration: none; color: #4dabff; font-weight: bold; }
     .counter-wrapper { text-align: center; padding: 15px 0; }
     </style>
@@ -64,7 +63,6 @@ if not df.empty:
     df['지역'] = df['상세주소'].apply(get_broad_region)
     df['카카오맵'] = df.apply(create_kakao_link, axis=1)
 
-    # 💡 [타이틀 섹션 보강]
     st.markdown('<p class="main-title">🐶 무무 탐색기</p>', unsafe_allow_html=True)
     st.markdown('<p class="main-subtitle">반려동물 동반 음식점 검색기</p>', unsafe_allow_html=True)
     
@@ -127,11 +125,11 @@ if not df.empty:
 # 4. 하단 카운터 및 안내 고지
 st.write("---")
 
-# 💡 [수정된 카운터 섹션] 깨짐 방지를 위해 인코딩을 최적화했습니다.
+# 💡 [절대 안 깨지는 새로운 카운터 배지]
 st.markdown(
     """
     <div class="counter-wrapper">
-        <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fmumu-search.streamlit.app&count_bg=%234DABFF&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Views&edge_flat=false" alt="Hits">
+        <img src="https://komarev.com/ghpvc/?username=mumuabba-search&color=4dabff&style=flat-square&label=VIEWS" alt="Hits">
     </div>
     """, 
     unsafe_allow_html=True
