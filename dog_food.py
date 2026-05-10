@@ -128,16 +128,14 @@ if not df.empty:
 # 4. 하단 안내 고지 및 범용 카운터
 st.write("---")
 
-# 💡 스트림릿의 외부 이미지 차단(CORS) 정책을 완벽하게 우회하는 방어 코드
-# shields.io의 동적 배지 시스템과 호환되는 URL을 사용하여 이미지 차단 아이콘을 완벽 해결합니다.
-counter_url = f"https://hits.dwyl.com/mumuabba/mumu-search.svg?t={int(time.time())}"
+# 💡 스트림릿의 iframe 액자 구조에서도 봇으로 차단당하지 않는 카운터(visitorbadge.io) 적용
+# 특수문자로 인한 파싱 에러를 막기 위해 path를 아주 단순한 고유 ID로 부여합니다.
+counter_url = f"https://api.visitorbadge.io/api/visitors?path=mumuabba-mumu-search&label=Mumu%20Friends&countColor=%234dabff&t={int(time.time())}"
 
 st.markdown(
     f"""
     <div class="counter-wrapper">
-        <a href="https://github.com/dwyl/hits" target="_blank">
-            <img src="{counter_url}" alt="Hits" style="display: inline-block;">
-        </a>
+        <img src="{counter_url}" alt="Hits" style="display: inline-block;">
     </div>
     """, 
     unsafe_allow_html=True
