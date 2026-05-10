@@ -7,7 +7,7 @@ from PIL import Image
 
 # 1. 페이지 설정 및 보안 UI 숨김
 st.set_page_config(
-    page_title="무무 탐색기 - 반려동물 동반 음식점 검색기",
+    page_title="무무 탐색기 - 식품의약안전처에 등록된 반려동물 동반 음식점 검색기",
     layout="wide",
     initial_sidebar_state="collapsed",
     menu_items={'Get Help': None, 'Report a bug': None, 'About': None}
