@@ -125,11 +125,11 @@ if not df.empty:
 # 4. 하단 카운터 및 안내 고지
 st.write("---")
 
-# 💡 [절대 안 깨지는 새로운 카운터 배지]
+# 💡 [유머러스한 카운터 배지] 문구에 공백을 넣을 때는 %20을 사용해야 깨지지 않습니다.
 st.markdown(
     """
     <div class="counter-wrapper">
-        <img src="https://komarev.com/ghpvc/?username=mumuabba-search&color=4dabff&style=flat-square&label=VIEWS" alt="Hits">
+        <img src="https://komarev.com/ghpvc/?username=mumuabba-search&color=4dabff&style=flat-square&label=Mumu%20Friends" alt="Hits">
     </div>
     """, 
     unsafe_allow_html=True
