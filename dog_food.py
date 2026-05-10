@@ -21,18 +21,24 @@ hide_style = """
     footer { visibility: hidden; }
     header { visibility: hidden; }
     .block-container { padding-top: 2rem; }
+    /* 테이블 스타일링 */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { background-color: #f0f2f6; text-align: left; padding: 10px; border-bottom: 2px solid #ddd; }
+    td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+    tr:hover { background-color: #f9f9f9; }
+    a { text-decoration: none; color: #1f77b4; font-weight: bold; }
+    a:hover { text-decoration: underline; }
     </style>
 """
 st.markdown(hide_style, unsafe_allow_html=True)
 
 CACHE_FILE = "pet_data_cache.json"
 
-# [유틸리티] 카카오맵 검색 링크 생성 함수
+# [유틸리티] 카카오맵 검색 링크 생성
 def create_kakao_link(row):
     base_url = "https://map.kakao.com/link/search/"
     addr = str(row.get('상세주소', ''))
     parts = addr.split()
-    # 주소에서 시/군 단위를 추출해 검색 정확도를 높임
     city = parts[1] if len(parts) > 1 else (parts[0] if parts else "")
     query = f"{city} {row.get('업소명', '')}"
     return f"{base_url}{urllib.parse.quote(query)}"
@@ -51,20 +57,16 @@ df = load_data()
 
 # 3. 메인 서비스 로직
 if not df.empty:
-    # 지역 분류 함수
     def get_broad_region(addr):
         parts = str(addr).split()
         return parts[0] if len(parts) > 0 else "미분류"
     
     df['지역'] = df['상세주소'].apply(get_broad_region)
-    # 카카오맵 링크 생성
     df['카카오맵'] = df.apply(create_kakao_link, axis=1)
 
-    # 헤더 섹션
     st.markdown("### 🐶 무무 탐색기 : 전국 동반 식당")
     st.caption("업소명을 클릭하면 카카오맵으로 연결됩니다. 🗺️")
     
-    # 마지막 업데이트 시간 표시
     last_update = df['수집날짜'].iloc[0] if '수집날짜' in df.columns else "정보 없음"
     st.info(f"⏱️ **최종 정보 갱신 일자:** {last_update} (매일 새벽 1시 자동 갱신)")
     st.write("---")
@@ -75,7 +77,6 @@ if not df.empty:
     selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
     
     if not selected_broad:
-        # 지역 미선택 시 무무 사진 (회전 보정 포함)
         if os.path.exists("mumu.jpg"):
             try:
                 img = Image.open("mumu.jpg").rotate(-90, expand=True)
@@ -98,26 +99,21 @@ if not df.empty:
 
         if selected_city:
             final_df = broad_df if selected_city == "전체" else broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
-            
             st.success(f"🔍 검색 결과: {len(final_df):,}건 (업소명 클릭 시 지도 이동)")
             
-            # 테이블 설정: 에러 방지를 위해 가장 안정적인 LinkColumn 방식 사용
-            st.dataframe(
-                final_df[['업소명', '상세주소', '카카오맵']],
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "업소명": st.column_config.LinkColumn(
-                        "업소명 (클릭 시 카카오맵)",
-                        # url_path 대신 가장 호환성 높은 방식으로 처리
-                        display_text=None 
-                    ),
-                    "상세주소": "상세 주소",
-                    "카카오맵": None  # 링크용 데이터이므로 표에서는 숨김
-                }
-            )
+            # 💡 [핵심] 새로고침 방지를 위한 HTML 링크 생성
+            def make_clickable(name, link):
+                # target="_blank"를 통해 새 탭에서 열리도록 강제 (Rerun 방지)
+                return f'<a href="{link}" target="_blank">{name}</a>'
 
-# 4. 하단 안내 및 책임 한계 고지 (변동 없음)
+            display_df = final_df.copy()
+            display_df['업소명'] = display_df.apply(lambda x: make_clickable(x['업소명'], x['카카오맵']), axis=1)
+
+            # 데이터프레임 대신 HTML 테이블로 렌더링
+            table_html = display_df[['업소명', '상세주소']].to_html(escape=False, index=False)
+            st.markdown(table_html, unsafe_allow_html=True)
+
+# 4. 하단 안내 및 책임 한계 고지 (기존 동일)
 st.divider()
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
