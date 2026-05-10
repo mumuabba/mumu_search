@@ -10,7 +10,7 @@ st.set_page_config(page_title="무무 탐색기 - mumuabba", layout="wide")
 
 CACHE_FILE = "pet_data_cache.json"
 
-# [유틸리티] 네이버 지도 링크
+# [유틸리티] 네이버 지도 링크 생성
 def create_naver_link(row):
     base_url = "https://map.naver.com/v5/search/"
     addr = str(row.get('상세주소', ''))
@@ -40,7 +40,7 @@ if not df.empty:
 
     # 헤더 섹션
     st.markdown("### 🐶 무무 탐색기 : 전국 동반 식당")
-    st.caption("반려동물을 사랑하는 마음으로 만든 정보 제공 서비스")
+    st.caption("반려동물을 사랑하는 마음으로 만든 정보 제공 서비스") # 수정된 부분
     
     # 마지막 업데이트 시간 표시
     last_update = df['수집날짜'].iloc[0] if '수집날짜' in df.columns else "정보 없음"
@@ -80,15 +80,16 @@ if not df.empty:
                 column_config={"지도보기": st.column_config.LinkColumn("네이버 지도", display_text="보기 🔗")}
             )
 
-# 4. 하단 안내문구
+# 4. 하단 안내문구 (예전 버전 복구)
 st.divider()
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
         <p style="font-size: 1rem; color: #222;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
         본 서비스는 <b>반려동물을 가족으로 키우는 반려인의 마음으로, 전국의 동반 가능 식당 정보를 보다 쉽고 편리하게 확인하기 위한 단순 정보 제공 목적으로 제작되었습니다.</b><br>
-        공공데이터법에 의거하여 <b>식품의약품안전처</b>에서 제공하는 Open-API를 활용한 <b>비영리 목적의 사이트</b>임을 밝힙니다.<br><br>
+        공공데이터법에 의거하여 <b>식품의약품안전처</b>에서 제공하는 Open-API를 활용한 정보 서비스임을 밝힙니다.<br><br>
         데이터는 <b>매일 새벽 1시</b>에 자동으로 최신화됩니다.<br>
         <span style="color: #d32f2f;"><b>정확한 정보 확인을 위해 방문 전 반드시 해당 업소에 유선으로 영업 여부를 확인해 주시기 바랍니다.</b></span><br>
+        본 서비스의 정보를 활용한 결과로 발생하는 사항에 대해 운영자는 법적 책임을 지지 않습니다.<br><br>
         ⓒ 2026. <b>mumuabba</b>. All rights reserved. | 출처: 식품의약품안전처 식품안전나라
     </div>
 """, unsafe_allow_html=True)
