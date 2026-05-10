@@ -13,7 +13,7 @@ st.set_page_config(
     menu_items={'Get Help': None, 'Report a bug': None, 'About': None}
 )
 
-# 2. CSS 스타일 (유지)
+# 2. 우측 상단 메뉴 숨김 및 모바일 최적화 CSS
 hide_style = """
     <style>
     .viewerBadge_container__1QS1n { display: none !important; }
@@ -51,13 +51,11 @@ def load_data():
 df = load_data()
 
 if not df.empty:
-    # 💡 [핵심 수정] 성훈님 엑셀 구조(업소주소)에 맞춰 지역 컬럼 자동 생성
-    # 엑셀에 '지역' 컬럼이 없으므로 '상세주소'에서 첫 단어를 따옵니다.
+    # 지역 자동 추출 (엑셀 구조 반영)
     def get_region(addr):
         addr_str = str(addr).strip()
-        if not addr_str or addr_str == 'nan':
-            return "미분류"
-        return addr_str.split()[0] # '강원특별자치도 원주시...' -> '강원특별자치도'
+        if not addr_str or addr_str == 'nan': return "미분류"
+        return addr_str.split()[0]
 
     df['지역'] = df['상세주소'].apply(get_region)
     df['카카오맵'] = df.apply(create_kakao_link, axis=1)
@@ -65,12 +63,15 @@ if not df.empty:
     st.markdown('<p class="main-title">🐶 무무 탐색기</p>', unsafe_allow_html=True)
     st.markdown('<p class="main-subtitle">반려동물 동반 음식점 검색기</p>', unsafe_allow_html=True)
     
-    last_update = df['수집날짜'].iloc[0] if '수집날짜' in df.columns else "정보 없음"
-    st.info(f"⏱️ **데이터 최종 업데이트:** {last_update}")
+    # 💡 시간 반영 수정: 수집날짜 컬럼에서 데이터를 정확히 가져옴
+    if '수집날짜' in df.columns:
+        last_update = df['수집날짜'].dropna().iloc[0] if not df['수집날짜'].dropna().empty else "정보 없음"
+    else:
+        last_update = "정보 없음"
+    st.info(f"⏱️ **데이터 갱신:** {last_update}")
 
     # 1단계: 광역 지역 선택
-    # 💡 필터링 시 nan이나 미분류 등은 제외합니다.
-    broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None", "nan"]])
+    broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
     selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
     
     if not selected_broad:
@@ -81,12 +82,10 @@ if not df.empty:
             except: st.write("🐶")
         st.info("탐색할 지역을 선택해 주세요!")
     else:
-        # 2단계: 상세 지역 선택 (두 번째 단어: 시/군/구 추출)
+        # 2단계: 상세 지역 선택
         broad_df = df[df["지역"] == selected_broad].copy()
-        
         def get_city_safe(addr):
             parts = str(addr).split()
-            # '강원특별자치도 원주시' -> '원주시' 추출
             return parts[1] if len(parts) > 1 else "기타"
         
         city_list = sorted(list(set(broad_df["상세주소"].apply(get_city_safe).values)))
@@ -98,7 +97,6 @@ if not df.empty:
             
             def shorten_address(addr, broad, city):
                 addr_str = str(addr)
-                # 표시되는 주소에서 광역명과 시군구명을 가독성을 위해 제거
                 remove_target = f"{broad} {city}" if selected_city != "전체" else broad
                 return addr_str.replace(remove_target, "").strip()
 
@@ -124,15 +122,17 @@ if not df.empty:
             """
             st.markdown(table_html, unsafe_allow_html=True)
 
-# 4. 하단 카운터 및 안내 고지 (유지)
+# 4. 하단 카운터 및 안내 고지 (복구된 버전)
 st.write("---")
 st.markdown('<div class="counter-wrapper"><img src="https://komarev.com/ghpvc/?username=mumuabba-search&color=4dabff&style=flat-square&label=Mumu%20Friends" alt="Hits"></div>', unsafe_allow_html=True)
+
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: rgba(128, 128, 128, 0.05); padding: 25px; border-radius: 12px; border: 1px solid rgba(128, 128, 128, 0.1);">
         <p style="font-size: 1rem; color: inherit;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
-        본 서비스는 <b>반려인의 마음으로 동반 가능 식당 정보를 공유하기 위해 제작되었습니다.</b><br>
-        관리자가 업데이트하는 엑셀 데이터를 기반으로 하며, 업로드 시 즉시 반영됩니다.<br><br>
-        <span style="color: #d32f2f;"><b>방문 전 반드시 해당 업소에 영업 여부를 확인해 주시기 바랍니다.</b></span><br><br>
-        ⓒ 2026. <b>mumuabba</b>. All rights reserved.
+        본 서비스는 <b>반려동물을 가족으로 키우는 반려인의 마음으로, 전국의 동반 가능 식당 정보를 보다 쉽고 편리하게 확인하기 위한 단순 정보 제공 목적으로 제작되었습니다.</b><br>
+        식품의약품안전처에서 제공하는 Open-API를 활용한 정보 서비스임을 밝힙니다.<br><br>
+        데이터는 <b>매일 새벽 1시</b>에 자동으로 최신화됩니다.<br>
+        <span style="color: #d32f2f;"><b>정확한 정보 확인을 위해 방문 전 반드시 해당 업소에 유선으로 영업 여부를 확인해 주시기 바랍니다.</b></span><br><br>
+        ⓒ 2026. <b>mumuabba</b>. All rights reserved. | 출처: 식품의약품안전처 식품안전나라
     </div>
 """, unsafe_allow_html=True)
