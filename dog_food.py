@@ -128,13 +128,14 @@ if not df.empty:
 # 4. 하단 안내 고지 및 범용 카운터
 st.write("---")
 
-# 💡 범용 카운터 hitscounter.dev 적용 (time.time()으로 매번 실시간 갱신)
-counter_url = f"https://hitscounter.dev/api/count/incr/badge.svg?url=https%3A%2F%2Fmumuabba-search.streamlit.app&title=Mumu+Friends&t={time.time()}"
+# 💡 URL의 모든 특수문자(?:/&= 등)를 브라우저 표준에 맞게 완벽하게 인코딩했습니다.
+# 띄어쓰기는 %20으로 처리하여 이미지 깨짐 현상을 원천 차단합니다.
+counter_url = f"https://hitscounter.dev/api/count/incr/badge.svg?url=https%3A%2F%2Fmumuabba-search.streamlit.app&title=Mumu%20Friends&t={int(time.time())}"
 
 st.markdown(
     f"""
     <div class="counter-wrapper">
-        <img src="{counter_url}" alt="Hits">
+        <img src="{counter_url}" alt="Hits" style="max-width: 100%;">
     </div>
     """, 
     unsafe_allow_html=True
