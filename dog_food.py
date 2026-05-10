@@ -39,8 +39,15 @@ def create_kakao_link(row):
     query = f"{row.get('업소명', '')}"
     return f"{base_url}{urllib.parse.quote(query)}"
 
-@st.cache_data
-def load_data():
+# 💡 파일의 수정 시간을 감지하는 함수
+def get_file_mtime(file_path):
+    if os.path.exists(file_path):
+        return os.path.getmtime(file_path)
+    return 0
+
+# 💡 캐시 설정: 파일의 수정 시간(mtime)이 바뀌면 자동으로 새로 읽어옴
+@st.cache_data(ttl=600)
+def load_data(mtime):
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, 'r', encoding='utf-8') as f:
@@ -48,10 +55,12 @@ def load_data():
         except: return pd.DataFrame()
     return pd.DataFrame()
 
-df = load_data()
+# 데이터 로드 (파일 시간을 인자로 전달하여 캐시 갱신 유도)
+current_mtime = get_file_mtime(CACHE_FILE)
+df = load_data(current_mtime)
 
 if not df.empty:
-    # 지역 자동 추출 (엑셀 구조 반영)
+    # 지역 자동 추출
     def get_region(addr):
         addr_str = str(addr).strip()
         if not addr_str or addr_str == 'nan': return "미분류"
@@ -63,7 +72,7 @@ if not df.empty:
     st.markdown('<p class="main-title">🐶 무무 탐색기</p>', unsafe_allow_html=True)
     st.markdown('<p class="main-subtitle">반려동물 동반 음식점 검색기</p>', unsafe_allow_html=True)
     
-    # 💡 시간 반영 수정: 수집날짜 컬럼에서 데이터를 정확히 가져옴
+    # 상단 시간 표시
     if '수집날짜' in df.columns:
         last_update = df['수집날짜'].dropna().iloc[0] if not df['수집날짜'].dropna().empty else "정보 없음"
     else:
@@ -122,7 +131,7 @@ if not df.empty:
             """
             st.markdown(table_html, unsafe_allow_html=True)
 
-# 4. 하단 카운터 및 안내 고지 (복구된 버전)
+# 4. 하단 안내 고지
 st.write("---")
 st.markdown('<div class="counter-wrapper"><img src="https://komarev.com/ghpvc/?username=mumuabba-search&color=4dabff&style=flat-square&label=Mumu%20Friends" alt="Hits"></div>', unsafe_allow_html=True)
 
