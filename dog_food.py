@@ -7,7 +7,7 @@ from PIL import Image
 
 # 1. 페이지 설정 및 보안 UI 숨김
 st.set_page_config(
-    page_title="무무 탐색기 - mumuabba",
+    page_title="무무 탐색기 - 반려동물 동반 음식점 검색기",
     layout="wide",
     initial_sidebar_state="collapsed",
     menu_items={'Get Help': None, 'Report a bug': None, 'About': None}
@@ -20,7 +20,11 @@ hide_style = """
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     header { visibility: hidden; }
-    .block-container { padding: 1rem 1rem; }
+    .block-container { padding: 1.5rem 1rem; }
+    
+    /* 타이틀 및 설명 스타일 */
+    .main-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 0.2rem; }
+    .main-subtitle { font-size: 1rem; color: #888; margin-bottom: 1.5rem; }
     
     table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
     th { background-color: rgba(128, 128, 128, 0.15); text-align: left; padding: 10px; font-size: 0.85rem; border-bottom: 2px solid rgba(128, 128, 128, 0.3); }
@@ -60,11 +64,12 @@ if not df.empty:
     df['지역'] = df['상세주소'].apply(get_broad_region)
     df['카카오맵'] = df.apply(create_kakao_link, axis=1)
 
-    st.markdown("### 🐶 무무 탐색기")
-    st.caption("이름을 클릭하면 지도로 연결됩니다. 🗺️")
+    # 💡 [타이틀 섹션 보강]
+    st.markdown('<p class="main-title">🐶 무무 탐색기</p>', unsafe_allow_html=True)
+    st.markdown('<p class="main-subtitle">반려동물 동반 음식점 검색기</p>', unsafe_allow_html=True)
     
     last_update = df['수집날짜'].iloc[0] if '수집날짜' in df.columns else "정보 없음"
-    st.info(f"⏱️ **업데이트:** {last_update}")
+    st.info(f"⏱️ **데이터 갱신:** {last_update}")
 
     # 1단계: 광역 지역 선택
     broad_regions = sorted([r for r in df["지역"].unique() if r not in ["미분류", "nan", "None"]])
@@ -76,7 +81,7 @@ if not df.empty:
                 img = Image.open("mumu.jpg").rotate(-90, expand=True)
                 st.image(img, width=200)
             except: st.write("🐶")
-        st.info("지역을 선택해 주세요!")
+        st.info("탐색할 지역을 선택해 주세요!")
     else:
         # 2단계: 상세 지역 선택
         broad_df = df[df["지역"] == selected_broad].copy()
@@ -90,7 +95,7 @@ if not df.empty:
 
         if selected_city:
             final_df = broad_df if selected_city == "전체" else broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
-            st.success(f"🔍 {len(final_df):,}건 검색됨")
+            st.success(f"🔍 {len(final_df):,}건 검색됨 (이름 클릭 시 지도 이동)")
             
             def shorten_address(addr, broad, city):
                 addr_str = str(addr)
@@ -119,10 +124,9 @@ if not df.empty:
             """
             st.markdown(table_html, unsafe_allow_html=True)
 
-# 4. 하단 카운터 및 안내 고지 (이전 문구 그대로 복구)
+# 4. 하단 카운터 및 안내 고지
 st.write("---")
 
-# 실시간 조회수 카운터 배지
 st.markdown(
     """
     <div class="counter-wrapper">
