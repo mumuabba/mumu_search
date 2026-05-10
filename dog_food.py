@@ -128,9 +128,9 @@ if not df.empty:
 # 4. 하단 안내 고지 및 범용 카운터
 st.write("---")
 
-# 💡 스트림릿의 iframe 액자 구조에서도 봇으로 차단당하지 않는 카운터(visitorbadge.io) 적용
-# 특수문자로 인한 파싱 에러를 막기 위해 path를 아주 단순한 고유 ID로 부여합니다.
-counter_url = f"https://api.visitorbadge.io/api/visitors?path=mumuabba-mumu-search&label=Mumu%20Friends&countColor=%234dabff&t={int(time.time())}"
+# 💡 강제 시간 갱신(time.time())을 제거하여 브라우저의 자연스러운 캐싱을 유도합니다.
+# 새로운 방문자가 오거나, 일정 시간이 지나서 접속할 때만 숫자가 올라갑니다.
+counter_url = "https://api.visitorbadge.io/api/visitors?path=mumuabba-mumu-search&label=Mumu%20Friends&countColor=%234dabff"
 
 st.markdown(
     f"""
