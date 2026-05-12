@@ -73,7 +73,9 @@ if not df.empty:
         last_update = df['수집날짜'].dropna().iloc[0] if not df['수집날짜'].dropna().empty else "정보 없음"
     else:
         last_update = "정보 없음"
-    st.info(f"⏱️ **데이터 갱신:** {last_update}")
+        
+    # 💡 수정된 부분: 데이터 갱신 날짜 옆에 전체 등록 업소 개수(len(df))를 포매팅하여 추가했습니다.
+    st.info(f"⏱️ **데이터 갱신:** {last_update} | 🍽️ **총 등록 업소:** {len(df):,}개")
 
     broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
     selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
