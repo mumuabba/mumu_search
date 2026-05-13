@@ -3,8 +3,10 @@ import pandas as pd
 import json
 import os
 import urllib.parse
-import time  # 💡 NameError 해결을 위해 time 라이브러리를 명시적으로 추가!
+import time  # 💡 NameError 해결을 위해 time 라이브러리를 명시적으로 추가
 from PIL import Image
+# 💡 실시간 타이핑 감지 라이브러리 추가
+from streamlit_keyup import st_keyup
 
 # 1. 페이지 설정 및 보안 UI 숨김
 st.set_page_config(
@@ -131,10 +133,11 @@ if not df.empty:
 
     st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
 
-    # 💡 [핵심 UX 개선] 최상단 전국 통합 검색 바 생성
-    global_search_kw = st.text_input(
-        "🔍 전국 통합 매장 검색 (빠른 확인)", 
-        placeholder="가고 싶은 카페, 식당 상호명이나 키워드를 입력하세요! (예: 스타벅스, 원주)"
+    # 💡 [핵심 UX 개선] 엔터 필요 없는 실시간 타이핑 통합 검색창 구현
+    global_search_kw = st_keyup(
+        "🔍 전국 통합 매장 검색 (타이핑 즉시 실시간 검색)", 
+        placeholder="가고 싶은 카페, 식당 상호명이나 키워드를 입력하세요! (예: 스타벅스, 원주)",
+        debounce=300  # 0.3초 동안 추가 입력이 없을 때 검색 실행 (서버 과부하 완벽 방지)
     )
 
     def make_clickable(name, link):
@@ -142,7 +145,7 @@ if not df.empty:
 
     # 🎯 하이브리드 분기 로직
     if global_search_kw:
-        # 검색어가 있을 때: 전국 전체 데이터 대상 필터링 모드 (지역 버튼 생략)
+        # 검색어가 있을 때: 실시간 전국 통합 검색 결과 표출
         search_df = df[
             df['업소명'].str.contains(global_search_kw, case=False, na=False) | 
             df['상세주소'].str.contains(global_search_kw, case=False, na=False)
@@ -152,7 +155,6 @@ if not df.empty:
 
         if not search_df.empty:
             search_df['업소명'] = search_df.apply(lambda x: make_clickable(x['업소명'], x['카카오맵']), axis=1)
-            # 전국 검색이므로 주소를 축약하지 않고 상세주소 전체를 보여줍니다.
             search_df['표시주소'] = search_df['상세주소']
 
             table_html = f"""
@@ -170,7 +172,7 @@ if not df.empty:
             """
             st.markdown(table_html, unsafe_allow_html=True)
     else:
-        # 검색어가 없을 때: 기존의 지역별 탐색 모드 표출
+        # 검색어가 비어있을 때: 깔끔한 지역별 탐색 모드 표출
         st.markdown('<p style="font-size: 0.85rem; color: #888; margin-bottom: 5px;">📍 지역별로 모아보기</p>', unsafe_allow_html=True)
         broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
         selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
