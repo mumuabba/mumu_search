@@ -30,19 +30,20 @@ hide_style = """
     a { text-decoration: none; color: #4dabff; font-weight: bold; }
     .counter-wrapper { text-align: center; padding: 15px 0; }
     
-    /* 🎨 커스텀 대시보드 위젯 스타일 */
+    /* 🎨 커스텀 대시보드 위젯 스타일 (다크모드 지원 및 크기 최적화) */
     .stat-card {
-        background-color: rgba(128, 128, 128, 0.05);
-        border: 1px solid rgba(128, 128, 128, 0.1);
+        background-color: rgba(128, 128, 128, 0.1);
+        border: 1px solid rgba(128, 128, 128, 0.2);
         border-radius: 12px;
-        padding: 15px;
+        padding: 12px 15px;
         text-align: left;
     }
-    .stat-label { font-size: 0.85rem; color: #666; margin-bottom: 4px; }
-    .stat-value { font-size: 1.5rem; font-weight: bold; color: #111; line-height: 1.2; }
-    .stat-delta { font-size: 0.8rem; font-weight: bold; margin-top: 4px; }
-    .delta-up { color: #28a745; }
-    .delta-down { color: #dc3545; }
+    .stat-label { font-size: 0.8rem; color: #888; margin-bottom: 2px; }
+    /* 💡 숫자의 색상을 inherit으로 설정하여 테마에 따라 자동 변경되게 하고, 크기를 1.2rem으로 줄였습니다. */
+    .stat-value { font-size: 1.2rem; font-weight: bold; color: inherit; line-height: 1.2; }
+    .stat-delta { font-size: 0.75rem; font-weight: bold; margin-top: 4px; }
+    .delta-up { color: #2ecc71; }
+    .delta-down { color: #e74c3c; }
     .delta-none { color: #888; }
     </style>
 """
@@ -108,7 +109,7 @@ if not df.empty:
                 diff_count = stats.get("diff", 0)
         except: pass
 
-    # 💡 커스텀 대시보드 렌더링 (에러 유발 파라미터 완벽 제거)
+    # 💡 커스텀 대시보드 렌더링
     delta_class = "delta-up" if diff_count > 0 else ("delta-down" if diff_count < 0 else "delta-none")
     delta_icon = "▲" if diff_count > 0 else ("▼" if diff_count < 0 else "-")
     
@@ -118,12 +119,13 @@ if not df.empty:
         st.info(f"⏱️ **최신 데이터 갱신:**\n{last_update}")
         
     with col2:
+        # HTML을 사용하여 폰트 크기와 설명 문구를 정밀하게 조절합니다.
         st.markdown(f"""
             <div class="stat-card">
                 <div class="stat-label">식약처 등록 동반 가능 업소</div>
                 <div class="stat-value">{total_count:,}개</div>
                 <div class="stat-delta {delta_class}">
-                    {delta_icon} {abs(diff_count)}개 <span style="font-weight:normal; color:#888;">(이전 갱신 대비)</span>
+                    {delta_icon} {abs(diff_count)}개 <span style="font-weight:normal; color:#888;">(이전 대비)</span>
                 </div>
             </div>
         """, unsafe_allow_html=True)
