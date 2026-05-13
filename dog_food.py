@@ -30,16 +30,17 @@ hide_style = """
     a { text-decoration: none; color: #4dabff; font-weight: bold; }
     .counter-wrapper { text-align: center; padding: 15px 0; }
     
-    /* 🎨 커스텀 대시보드 위젯 스타일 (다크모드 지원 및 크기 최적화) */
+    /* 🎨 커스텀 대시보드 위젯 스타일 (간격 최적화) */
     .stat-card {
         background-color: rgba(128, 128, 128, 0.1);
         border: 1px solid rgba(128, 128, 128, 0.2);
         border-radius: 12px;
         padding: 12px 15px;
         text-align: left;
+        /* 💡 카드 자체의 하단 여백 추가 */
+        margin-bottom: 10px;
     }
     .stat-label { font-size: 0.8rem; color: #888; margin-bottom: 2px; }
-    /* 💡 숫자의 색상을 inherit으로 설정하여 테마에 따라 자동 변경되게 하고, 크기를 1.2rem으로 줄였습니다. */
     .stat-value { font-size: 1.2rem; font-weight: bold; color: inherit; line-height: 1.2; }
     .stat-delta { font-size: 0.75rem; font-weight: bold; margin-top: 4px; }
     .delta-up { color: #2ecc71; }
@@ -109,7 +110,7 @@ if not df.empty:
                 diff_count = stats.get("diff", 0)
         except: pass
 
-    # 💡 커스텀 대시보드 렌더링
+    # 💡 대시보드 렌더링
     delta_class = "delta-up" if diff_count > 0 else ("delta-down" if diff_count < 0 else "delta-none")
     delta_icon = "▲" if diff_count > 0 else ("▼" if diff_count < 0 else "-")
     
@@ -119,7 +120,6 @@ if not df.empty:
         st.info(f"⏱️ **최신 데이터 갱신:**\n{last_update}")
         
     with col2:
-        # HTML을 사용하여 폰트 크기와 설명 문구를 정밀하게 조절합니다.
         st.markdown(f"""
             <div class="stat-card">
                 <div class="stat-label">식약처 등록 동반 가능 업소</div>
@@ -129,6 +129,9 @@ if not df.empty:
                 </div>
             </div>
         """, unsafe_allow_html=True)
+
+    # 💡 [핵심 수정] 대시보드와 아래 버튼 사이의 간격을 띄워줍니다.
+    st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
 
     broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
     selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
