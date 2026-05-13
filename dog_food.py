@@ -30,15 +30,14 @@ hide_style = """
     a { text-decoration: none; color: #4dabff; font-weight: bold; }
     .counter-wrapper { text-align: center; padding: 15px 0; }
     
-    /* 🎨 커스텀 대시보드 위젯 스타일 (간격 최적화) */
+    /* 🎨 커스텀 대시보드 위젯 스타일 */
     .stat-card {
         background-color: rgba(128, 128, 128, 0.1);
         border: 1px solid rgba(128, 128, 128, 0.2);
         border-radius: 12px;
         padding: 12px 15px;
         text-align: left;
-        /* 💡 카드 자체의 하단 여백 추가 */
-        margin-bottom: 10px;
+        margin-bottom: 5px;
     }
     .stat-label { font-size: 0.8rem; color: #888; margin-bottom: 2px; }
     .stat-value { font-size: 1.2rem; font-weight: bold; color: inherit; line-height: 1.2; }
@@ -130,43 +129,31 @@ if not df.empty:
             </div>
         """, unsafe_allow_html=True)
 
-    # 💡 [핵심 수정] 대시보드와 아래 버튼 사이의 간격을 띄워줍니다.
     st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
 
-    broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
-    selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
-    
-    if not selected_broad:
-        if os.path.exists("mumu.jpg"):
-            try:
-                img = Image.open("mumu.jpg").rotate(-90, expand=True)
-                st.image(img, width=200)
-            except: st.write("🐶")
-        st.info("탐색할 지역을 선택해 주세요!")
-    else:
-        broad_df = df[df["지역"] == selected_broad].copy()
-        def get_city_safe(addr):
-            parts = str(addr).split()
-            return parts[1] if len(parts) > 1 else "기타"
-        
-        city_list = sorted(list(set(broad_df["상세주소"].apply(get_city_safe).values)))
-        selected_city = st.pills("상세 지역 선택", ["전체"] + city_list, selection_mode="single", label_visibility="collapsed")
+    # 💡 [핵심 UX 개선] 최상단 전국 통합 검색 바 생성
+    global_search_kw = st.text_input(
+        "🔍 전국 통합 매장 검색 (빠른 확인)", 
+        placeholder="가고 싶은 카페, 식당 상호명이나 키워드를 입력하세요! (예: 스타벅스, 원주)"
+    )
 
-        if selected_city:
-            final_df = broad_df if selected_city == "전체" else broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
-            st.success(f"🔍 {len(final_df):,}건 검색됨 (이름 클릭 시 지도 이동)")
-            
-            def shorten_address(addr, broad, city):
-                addr_str = str(addr)
-                remove_target = f"{broad} {city}" if selected_city != "전체" else broad
-                return addr_str.replace(remove_target, "").strip()
+    def make_clickable(name, link):
+        return f'<a href="{link}" target="_blank">{name}</a>'
 
-            def make_clickable(name, link):
-                return f'<a href="{link}" target="_blank">{name}</a>'
+    # 🎯 하이브리드 분기 로직
+    if global_search_kw:
+        # 검색어가 있을 때: 전국 전체 데이터 대상 필터링 모드 (지역 버튼 생략)
+        search_df = df[
+            df['업소명'].str.contains(global_search_kw, case=False, na=False) | 
+            df['상세주소'].str.contains(global_search_kw, case=False, na=False)
+        ].copy()
 
-            display_df = final_df.copy()
-            display_df['표시주소'] = display_df.apply(lambda x: shorten_address(x['상세주소'], selected_broad, selected_city), axis=1)
-            display_df['업소명'] = display_df.apply(lambda x: make_clickable(x['업소명'], x['카카오맵']), axis=1)
+        st.success(f"🔍 전국에서 '{global_search_kw}' 관련 매장 **{len(search_df):,}건** 검색됨 (이름 클릭 시 지도 이동)")
+
+        if not search_df.empty:
+            search_df['업소명'] = search_df.apply(lambda x: make_clickable(x['업소명'], x['카카오맵']), axis=1)
+            # 전국 검색이므로 주소를 축약하지 않고 상세주소 전체를 보여줍니다.
+            search_df['표시주소'] = search_df['상세주소']
 
             table_html = f"""
             <table>
@@ -177,11 +164,60 @@ if not df.empty:
                     </tr>
                 </thead>
                 <tbody>
-                    {"".join([f"<tr><td>{row['업소명']}</td><td>{row['표시주소']}</td></tr>" for _, row in display_df.iterrows()])}
+                    {"".join([f"<tr><td>{row['업소명']}</td><td>{row['표시주소']}</td></tr>" for _, row in search_df.iterrows()])}
                 </tbody>
             </table>
             """
             st.markdown(table_html, unsafe_allow_html=True)
+    else:
+        # 검색어가 없을 때: 기존의 지역별 탐색 모드 표출
+        st.markdown('<p style="font-size: 0.85rem; color: #888; margin-bottom: 5px;">📍 지역별로 모아보기</p>', unsafe_allow_html=True)
+        broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
+        selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
+        
+        if not selected_broad:
+            if os.path.exists("mumu.jpg"):
+                try:
+                    img = Image.open("mumu.jpg").rotate(-90, expand=True)
+                    st.image(img, width=200)
+                except: st.write("🐶")
+            st.info("탐색할 지역을 선택해 주세요!")
+        else:
+            broad_df = df[df["지역"] == selected_broad].copy()
+            def get_city_safe(addr):
+                parts = str(addr).split()
+                return parts[1] if len(parts) > 1 else "기타"
+            
+            city_list = sorted(list(set(broad_df["상세주소"].apply(get_city_safe).values)))
+            selected_city = st.pills("상세 지역 선택", ["전체"] + city_list, selection_mode="single", label_visibility="collapsed")
+
+            if selected_city:
+                final_df = broad_df if selected_city == "전체" else broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
+                st.success(f"🔍 {selected_broad} {selected_city} ❯ {len(final_df):,}건 검색됨 (이름 클릭 시 지도 이동)")
+                
+                def shorten_address(addr, broad, city):
+                    addr_str = str(addr)
+                    remove_target = f"{broad} {city}" if selected_city != "전체" else broad
+                    return addr_str.replace(remove_target, "").strip()
+
+                display_df = final_df.copy()
+                display_df['표시주소'] = display_df.apply(lambda x: shorten_address(x['상세주소'], selected_broad, selected_city), axis=1)
+                display_df['업소명'] = display_df.apply(lambda x: make_clickable(x['업소명'], x['카카오맵']), axis=1)
+
+                table_html = f"""
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 45%;">업소명</th>
+                            <th style="width: 55%;">상세 주소</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {"".join([f"<tr><td>{row['업소명']}</td><td>{row['표시주소']}</td></tr>" for _, row in display_df.iterrows()])}
+                    </tbody>
+                </table>
+                """
+                st.markdown(table_html, unsafe_allow_html=True)
 
 # 4. 하단 안내 고지 및 범용 카운터
 st.write("---")
