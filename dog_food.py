@@ -108,7 +108,7 @@ if not df.empty:
                 diff_count = stats.get("diff", 0)
         except: pass
 
-    # 💡 커스텀 대시보드 렌더링 (st.metric 대체)
+    # 💡 커스텀 대시보드 렌더링 (에러 유발 파라미터 완벽 제거)
     delta_class = "delta-up" if diff_count > 0 else ("delta-down" if diff_count < 0 else "delta-none")
     delta_icon = "▲" if diff_count > 0 else ("▼" if diff_count < 0 else "-")
     
@@ -118,7 +118,6 @@ if not df.empty:
         st.info(f"⏱️ **최신 데이터 갱신:**\n{last_update}")
         
     with col2:
-        # HTML을 사용하여 폰트 크기와 설명 문구를 정밀하게 조절합니다.
         st.markdown(f"""
             <div class="stat-card">
                 <div class="stat-label">식약처 등록 동반 가능 업소</div>
@@ -127,7 +126,7 @@ if not df.empty:
                     {delta_icon} {abs(diff_count)}개 <span style="font-weight:normal; color:#888;">(이전 갱신 대비)</span>
                 </div>
             </div>
-        """, unsafe_allow_class=True, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
     broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
     selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
