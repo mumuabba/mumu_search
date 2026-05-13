@@ -31,7 +31,6 @@ hide_style = """
     a { text-decoration: none; color: #4dabff; font-weight: bold; }
     .counter-wrapper { text-align: center; padding: 15px 0; }
     
-    /* 🎨 커스텀 대시보드 위젯 스타일 */
     .stat-card {
         background-color: rgba(128, 128, 128, 0.1);
         border: 1px solid rgba(128, 128, 128, 0.2);
@@ -75,14 +74,9 @@ current_mtime = get_file_mtime(CACHE_FILE)
 df = load_data(current_mtime)
 
 if not df.empty:
-    # 🎯 컬럼명 어댑터
-    if '업소주소' in df.columns:
-        df = df.rename(columns={'업소주소': '상세주소'})
-    elif 'siteAddr' in df.columns:
-        df = df.rename(columns={'siteAddr': '상세주소'})
-        
-    if 'bsshNm' in df.columns and '업소명' not in df.columns:
-        df = df.rename(columns={'bsshNm': '업소명'})
+    if '업소주소' in df.columns: df = df.rename(columns={'업소주소': '상세주소'})
+    elif 'siteAddr' in df.columns: df = df.rename(columns={'siteAddr': '상세주소'})
+    if 'bsshNm' in df.columns and '업소명' not in df.columns: df = df.rename(columns={'bsshNm': '업소명'})
 
     def get_region(addr):
         addr_str = str(addr).strip()
@@ -95,22 +89,19 @@ if not df.empty:
     st.markdown('<p class="main-title">🐶 무무 탐색기</p>', unsafe_allow_html=True)
     st.markdown('<p class="main-subtitle">식품의약품안전처에 등록된 반려동물 동반 음식점 검색기</p>', unsafe_allow_html=True)
     
-    # 💡 [핵심 업데이트] 서버의 UTC 시간을 한국 시간(KST)으로 변환
+    # 💡 수집날짜 형식 보정 및 한국 시간(+9) 변환
     if '수집날짜' in df.columns:
         raw_date = df['수집날짜'].dropna().iloc[0] if not df['수집날짜'].dropna().empty else "정보 없음"
         try:
-            # 1. 문자열을 시간 객체로 변환
-            utc_dt = datetime.strptime(raw_date, "%Y-%m-%d %H:%M:%S")
-            # 2. 한국 시간 보정 (+9시간)
+            # 초 단위가 없는 '2026-05-13 04:03' 형식 대응
+            utc_dt = datetime.strptime(raw_date.strip(), "%Y-%m-%d %H:%M")
             kst_dt = utc_dt + timedelta(hours=9)
-            # 3. 출력용 문자열로 재변환
-            last_update = kst_dt.strftime("%Y-%m-%d %H:%M:%S")
+            last_update = kst_dt.strftime("%Y-%m-%d %H:%M")
         except:
             last_update = raw_date
     else:
         last_update = "정보 없음"
         
-    # 💡 stats.json 장부 읽기
     total_count = len(df)
     diff_count = 0
     if os.path.exists("stats.json"):
@@ -120,15 +111,12 @@ if not df.empty:
                 diff_count = stats.get("diff", 0)
         except: pass
 
-    # 💡 커스텀 대시보드 렌더링
     delta_class = "delta-up" if diff_count > 0 else ("delta-down" if diff_count < 0 else "delta-none")
     delta_icon = "▲" if diff_count > 0 else ("▼" if diff_count < 0 else "-")
     
     col1, col2 = st.columns([1, 1])
-    
     with col1:
         st.info(f"⏱️ **최신 데이터 갱신:**\n{last_update}")
-        
     with col2:
         st.markdown(f"""
             <div class="stat-card">
@@ -142,7 +130,6 @@ if not df.empty:
 
     st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
 
-    # 🔍 전국 통합 매장 검색 바
     global_search_kw = st.text_input(
         "🔍 전국 통합 매장 검색 (빠른 확인)", 
         placeholder="가고 싶은 카페, 식당 상호명이나 키워드를 입력하세요! (예: 스타벅스, 원주)"
@@ -151,35 +138,15 @@ if not df.empty:
     def make_clickable(name, link):
         return f'<a href="{link}" target="_blank">{name}</a>'
 
-    # 🎯 하이브리드 분기 로직
     if global_search_kw:
-        search_df = df[
-            df['업소명'].str.contains(global_search_kw, case=False, na=False) | 
-            df['상세주소'].str.contains(global_search_kw, case=False, na=False)
-        ].copy()
-
+        search_df = df[df['업소명'].str.contains(global_search_kw, case=False, na=False) | df['상세주소'].str.contains(global_search_kw, case=False, na=False)].copy()
         st.success(f"🔍 전국에서 '{global_search_kw}' 관련 매장 **{len(search_df):,}건** 검색됨 (이름 클릭 시 지도 이동)")
-
         if not search_df.empty:
             search_df['업소명'] = search_df.apply(lambda x: make_clickable(x['업소명'], x['카카오맵']), axis=1)
             search_df['표시주소'] = search_df['상세주소']
-
-            table_html = f"""
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 45%;">업소명</th>
-                        <th style="width: 55%;">상세 주소</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {"".join([f"<tr><td>{row['업소명']}</td><td>{row['표시주소']}</td></tr>" for _, row in search_df.iterrows()])}
-                </tbody>
-            </table>
-            """
+            table_html = f"""<table><thead><tr><th style="width: 45%;">업소명</th><th style="width: 55%;">상세 주소</th></tr></thead><tbody>{"".join([f"<tr><td>{row['업소명']}</td><td>{row['표시주소']}</td></tr>" for _, row in search_df.iterrows()])}</tbody></table>"""
             st.markdown(table_html, unsafe_allow_html=True)
     else:
-        # 검색어가 없을 때: 지역별 탐색 모드
         st.markdown('<p style="font-size: 0.85rem; color: #888; margin-bottom: 5px;">📍 지역별로 모아보기</p>', unsafe_allow_html=True)
         broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
         selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
@@ -196,43 +163,20 @@ if not df.empty:
             def get_city_safe(addr):
                 parts = str(addr).split()
                 return parts[1] if len(parts) > 1 else "기타"
-            
             city_list = sorted(list(set(broad_df["상세주소"].apply(get_city_safe).values)))
             selected_city = st.pills("상세 지역 선택", ["전체"] + city_list, selection_mode="single", label_visibility="collapsed")
-
             if selected_city:
                 final_df = broad_df if selected_city == "전체" else broad_df[broad_df["상세주소"].apply(get_city_safe) == selected_city]
                 st.success(f"🔍 {selected_broad} {selected_city} ❯ {len(final_df):,}건 검색됨 (이름 클릭 시 지도 이동)")
-                
-                def shorten_address(addr, broad, city):
-                    addr_str = str(addr)
-                    remove_target = f"{broad} {city}" if selected_city != "전체" else broad
-                    return addr_str.replace(remove_target, "").strip()
-
                 display_df = final_df.copy()
-                display_df['표시주소'] = display_df.apply(lambda x: shorten_address(x['상세주소'], selected_broad, selected_city), axis=1)
+                display_df['표시주소'] = display_df.apply(lambda x: x['상세주소'].replace(selected_broad + " " + selected_city if selected_city != "전체" else selected_broad, "").strip(), axis=1)
                 display_df['업소명'] = display_df.apply(lambda x: make_clickable(x['업소명'], x['카카오맵']), axis=1)
-
-                table_html = f"""
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 45%;">업소명</th>
-                            <th style="width: 55%;">상세 주소</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {"".join([f"<tr><td>{row['업소명']}</td><td>{row['표시주소']}</td></tr>" for _, row in display_df.iterrows()])}
-                    </tbody>
-                </table>
-                """
+                table_html = f"""<table><thead><tr><th style="width: 45%;">업소명</th><th style="width: 55%;">상세 주소</th></tr></thead><tbody>{"".join([f"<tr><td>{row['업소명']}</td><td>{row['표시주소']}</td></tr>" for _, row in display_df.iterrows()])}</tbody></table>"""
                 st.markdown(table_html, unsafe_allow_html=True)
 
-# 4. 하단 안내 고지 및 범용 카운터
 st.write("---")
 counter_url = "https://api.visitorbadge.io/api/visitors?path=mumuabba-mumu-search&label=Mumu%20Friends&countColor=%234dabff"
 st.markdown(f'<div class="counter-wrapper"><img src="{counter_url}" alt="Hits"></div>', unsafe_allow_html=True)
-
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: rgba(128, 128, 128, 0.05); padding: 25px; border-radius: 12px; border: 1px solid rgba(128, 128, 128, 0.1);">
         <p style="font-size: 1rem; color: inherit;"><b>[ 안내 및 책임 한계 고지 ]</b></p>
