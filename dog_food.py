@@ -3,7 +3,8 @@ import pandas as pd
 import json
 import os
 import urllib.parse
-import time  # 💡 NameError 해결을 위해 time 라이브러리를 명시적으로 추가!
+import time
+from datetime import datetime, timedelta
 from PIL import Image
 
 # 1. 페이지 설정 및 보안 UI 숨김
@@ -30,7 +31,7 @@ hide_style = """
     a { text-decoration: none; color: #4dabff; font-weight: bold; }
     .counter-wrapper { text-align: center; padding: 15px 0; }
     
-    /* 🎨 커스텀 대시보드 위젯 스타일 (다크모드 지원 및 크기 최적화) */
+    /* 🎨 커스텀 대시보드 위젯 스타일 */
     .stat-card {
         background-color: rgba(128, 128, 128, 0.1);
         border: 1px solid rgba(128, 128, 128, 0.2);
@@ -94,8 +95,18 @@ if not df.empty:
     st.markdown('<p class="main-title">🐶 무무 탐색기</p>', unsafe_allow_html=True)
     st.markdown('<p class="main-subtitle">식품의약품안전처에 등록된 반려동물 동반 음식점 검색기</p>', unsafe_allow_html=True)
     
+    # 💡 [핵심 업데이트] 서버의 UTC 시간을 한국 시간(KST)으로 변환
     if '수집날짜' in df.columns:
-        last_update = df['수집날짜'].dropna().iloc[0] if not df['수집날짜'].dropna().empty else "정보 없음"
+        raw_date = df['수집날짜'].dropna().iloc[0] if not df['수집날짜'].dropna().empty else "정보 없음"
+        try:
+            # 1. 문자열을 시간 객체로 변환
+            utc_dt = datetime.strptime(raw_date, "%Y-%m-%d %H:%M:%S")
+            # 2. 한국 시간 보정 (+9시간)
+            kst_dt = utc_dt + timedelta(hours=9)
+            # 3. 출력용 문자열로 재변환
+            last_update = kst_dt.strftime("%Y-%m-%d %H:%M:%S")
+        except:
+            last_update = raw_date
     else:
         last_update = "정보 없음"
         
@@ -131,7 +142,7 @@ if not df.empty:
 
     st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
 
-    # 💡 [보안 및 안정성 강화] 에러를 유발하는 외부 라이브러리 대신 표준 st.text_input 사용
+    # 🔍 전국 통합 매장 검색 바
     global_search_kw = st.text_input(
         "🔍 전국 통합 매장 검색 (빠른 확인)", 
         placeholder="가고 싶은 카페, 식당 상호명이나 키워드를 입력하세요! (예: 스타벅스, 원주)"
@@ -142,7 +153,6 @@ if not df.empty:
 
     # 🎯 하이브리드 분기 로직
     if global_search_kw:
-        # 검색어가 있을 때: 전국 전체 데이터 대상 필터링 모드
         search_df = df[
             df['업소명'].str.contains(global_search_kw, case=False, na=False) | 
             df['상세주소'].str.contains(global_search_kw, case=False, na=False)
@@ -169,7 +179,7 @@ if not df.empty:
             """
             st.markdown(table_html, unsafe_allow_html=True)
     else:
-        # 검색어가 없을 때: 기존의 지역별 탐색 모드 표출
+        # 검색어가 없을 때: 지역별 탐색 모드
         st.markdown('<p style="font-size: 0.85rem; color: #888; margin-bottom: 5px;">📍 지역별로 모아보기</p>', unsafe_allow_html=True)
         broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
         selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
