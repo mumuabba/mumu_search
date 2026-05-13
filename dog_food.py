@@ -29,6 +29,21 @@ hide_style = """
     td { padding: 12px 8px; border-bottom: 1px solid rgba(128, 128, 128, 0.1); font-size: 0.88rem; word-break: break-all; vertical-align: middle; background-color: transparent; }
     a { text-decoration: none; color: #4dabff; font-weight: bold; }
     .counter-wrapper { text-align: center; padding: 15px 0; }
+    
+    /* 🎨 커스텀 대시보드 위젯 스타일 */
+    .stat-card {
+        background-color: rgba(128, 128, 128, 0.05);
+        border: 1px solid rgba(128, 128, 128, 0.1);
+        border-radius: 12px;
+        padding: 15px;
+        text-align: left;
+    }
+    .stat-label { font-size: 0.85rem; color: #666; margin-bottom: 4px; }
+    .stat-value { font-size: 1.5rem; font-weight: bold; color: #111; line-height: 1.2; }
+    .stat-delta { font-size: 0.8rem; font-weight: bold; margin-top: 4px; }
+    .delta-up { color: #28a745; }
+    .delta-down { color: #dc3545; }
+    .delta-none { color: #888; }
     </style>
 """
 st.markdown(hide_style, unsafe_allow_html=True)
@@ -58,7 +73,7 @@ current_mtime = get_file_mtime(CACHE_FILE)
 df = load_data(current_mtime)
 
 if not df.empty:
-    # 🎯 무적의 방어 코드: 원본 엑셀의 컬럼명이 바뀌어도 웹 앱이 오류 없이 인식하도록 강제 변환
+    # 🎯 컬럼명 어댑터
     if '업소주소' in df.columns:
         df = df.rename(columns={'업소주소': '상세주소'})
     elif 'siteAddr' in df.columns:
@@ -83,10 +98,9 @@ if not df.empty:
     else:
         last_update = "정보 없음"
         
-    # 💡 로봇이 새벽마다 작성한 stats.json 장부를 읽어와 전체 개수와 증감 지표 연동
+    # 💡 stats.json 장부 읽기
     total_count = len(df)
     diff_count = 0
-    
     if os.path.exists("stats.json"):
         try:
             with open("stats.json", "r", encoding="utf-8") as f:
@@ -94,18 +108,26 @@ if not df.empty:
                 diff_count = stats.get("diff", 0)
         except: pass
 
-    # 상단을 2분할하여 대시보드 형태로 출력
+    # 💡 커스텀 대시보드 렌더링 (st.metric 대체)
+    delta_class = "delta-up" if diff_count > 0 else ("delta-down" if diff_count < 0 else "delta-none")
+    delta_icon = "▲" if diff_count > 0 else ("▼" if diff_count < 0 else "-")
+    
     col1, col2 = st.columns([1, 1])
     
     with col1:
         st.info(f"⏱️ **최신 데이터 갱신:**\n{last_update}")
         
     with col2:
-        st.metric(
-            label="🍽️ 식약처 등록 동반 가능 업소", 
-            value=f"{total_count:,}개", 
-            delta=f"{diff_count}개"
-        )
+        # HTML을 사용하여 폰트 크기와 설명 문구를 정밀하게 조절합니다.
+        st.markdown(f"""
+            <div class="stat-card">
+                <div class="stat-label">식약처 등록 동반 가능 업소</div>
+                <div class="stat-value">{total_count:,}개</div>
+                <div class="stat-delta {delta_class}">
+                    {delta_icon} {abs(diff_count)}개 <span style="font-weight:normal; color:#888;">(이전 갱신 대비)</span>
+                </div>
+            </div>
+        """, unsafe_allow_class=True, unsafe_allow_html=True)
 
     broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
     selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
@@ -159,17 +181,8 @@ if not df.empty:
 
 # 4. 하단 안내 고지 및 범용 카운터
 st.write("---")
-
 counter_url = "https://api.visitorbadge.io/api/visitors?path=mumuabba-mumu-search&label=Mumu%20Friends&countColor=%234dabff"
-
-st.markdown(
-    f"""
-    <div class="counter-wrapper">
-        <img src="{counter_url}" alt="Hits" style="display: inline-block;">
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
+st.markdown(f'<div class="counter-wrapper"><img src="{counter_url}" alt="Hits"></div>', unsafe_allow_html=True)
 
 st.markdown(f"""
     <div style="font-size: 0.85rem; color: #555; text-align: center; line-height: 1.8; background-color: rgba(128, 128, 128, 0.05); padding: 25px; border-radius: 12px; border: 1px solid rgba(128, 128, 128, 0.1);">
