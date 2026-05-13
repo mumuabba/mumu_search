@@ -3,10 +3,8 @@ import pandas as pd
 import json
 import os
 import urllib.parse
-import time  # 💡 NameError 해결을 위해 time 라이브러리를 명시적으로 추가
+import time  # 💡 NameError 해결을 위해 time 라이브러리를 명시적으로 추가!
 from PIL import Image
-# 💡 실시간 타이핑 감지 라이브러리 추가
-from streamlit_keyup import st_keyup
 
 # 1. 페이지 설정 및 보안 UI 숨김
 st.set_page_config(
@@ -32,14 +30,14 @@ hide_style = """
     a { text-decoration: none; color: #4dabff; font-weight: bold; }
     .counter-wrapper { text-align: center; padding: 15px 0; }
     
-    /* 🎨 커스텀 대시보드 위젯 스타일 */
+    /* 🎨 커스텀 대시보드 위젯 스타일 (다크모드 지원 및 크기 최적화) */
     .stat-card {
         background-color: rgba(128, 128, 128, 0.1);
         border: 1px solid rgba(128, 128, 128, 0.2);
         border-radius: 12px;
         padding: 12px 15px;
         text-align: left;
-        margin-bottom: 5px;
+        margin-bottom: 10px;
     }
     .stat-label { font-size: 0.8rem; color: #888; margin-bottom: 2px; }
     .stat-value { font-size: 1.2rem; font-weight: bold; color: inherit; line-height: 1.2; }
@@ -111,7 +109,7 @@ if not df.empty:
                 diff_count = stats.get("diff", 0)
         except: pass
 
-    # 💡 대시보드 렌더링
+    # 💡 커스텀 대시보드 렌더링
     delta_class = "delta-up" if diff_count > 0 else ("delta-down" if diff_count < 0 else "delta-none")
     delta_icon = "▲" if diff_count > 0 else ("▼" if diff_count < 0 else "-")
     
@@ -133,11 +131,10 @@ if not df.empty:
 
     st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
 
-    # 💡 [핵심 UX 개선] 엔터 필요 없는 실시간 타이핑 통합 검색창 구현
-    global_search_kw = st_keyup(
-        "🔍 전국 통합 매장 검색 (타이핑 즉시 실시간 검색)", 
-        placeholder="가고 싶은 카페, 식당 상호명이나 키워드를 입력하세요! (예: 스타벅스, 원주)",
-        debounce=300  # 0.3초 동안 추가 입력이 없을 때 검색 실행 (서버 과부하 완벽 방지)
+    # 💡 [보안 및 안정성 강화] 에러를 유발하는 외부 라이브러리 대신 표준 st.text_input 사용
+    global_search_kw = st.text_input(
+        "🔍 전국 통합 매장 검색 (빠른 확인)", 
+        placeholder="가고 싶은 카페, 식당 상호명이나 키워드를 입력하세요! (예: 스타벅스, 원주)"
     )
 
     def make_clickable(name, link):
@@ -145,7 +142,7 @@ if not df.empty:
 
     # 🎯 하이브리드 분기 로직
     if global_search_kw:
-        # 검색어가 있을 때: 실시간 전국 통합 검색 결과 표출
+        # 검색어가 있을 때: 전국 전체 데이터 대상 필터링 모드
         search_df = df[
             df['업소명'].str.contains(global_search_kw, case=False, na=False) | 
             df['상세주소'].str.contains(global_search_kw, case=False, na=False)
@@ -172,7 +169,7 @@ if not df.empty:
             """
             st.markdown(table_html, unsafe_allow_html=True)
     else:
-        # 검색어가 비어있을 때: 깔끔한 지역별 탐색 모드 표출
+        # 검색어가 없을 때: 기존의 지역별 탐색 모드 표출
         st.markdown('<p style="font-size: 0.85rem; color: #888; margin-bottom: 5px;">📍 지역별로 모아보기</p>', unsafe_allow_html=True)
         broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
         selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
