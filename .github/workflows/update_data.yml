@@ -1,32 +1,36 @@
-name: Auto Update Data from Excel
+name: Daily MFDS Data Auto Update
 
 on:
-  push:
-    paths:
-      - 'data.xlsx'
+  schedule:
+    # 매일 아침 5시 자동 실행 (UTC 기준 20시)
+    - cron: '0 20 * * *'
+  workflow_dispatch: # 관리자가 수동으로 즉시 실행할 수 있는 버튼 활성화
 
 jobs:
-  build:
+  update-data:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: 1. 저장소 코드 불러오기
         uses: actions/checkout@v3
-
-      - name: Set up Python
+      
+      - name: 2. 파이썬 3.9 환경 세팅
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: pip install pandas openpyxl
-
-      - name: Run Converter
-        run: python convert_to_json.py
-
-      - name: Commit and Push
+          python-version: '3.9'
+          
+      - name: 3. 필수 라이브러리 설치
+        run: pip install requests pandas openpyxl
+        
+      - name: 4. 무인 팩토리 공정 순차 가동
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add pet_data_cache.json
-          git commit -m "Auto-update JSON" || echo "No changes"
-          git push
+          python crawler.py
+          python update_stats.py
+          python convert_to_json.py
+          
+      - name: 5. 갱신된 파일 깃허브에 자동 저장 (Commit & Push)
+        run: |
+          git config --global user.name "MumuAutoBot"
+          git config --global user.email "autobot@mumu.search"
+          git add data.xlsx stats.json pet_data_cache.json
+          # 파일에 변경사항이 있을 때만 푸시 (에러 방지용 방어 코드)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "로봇 자동 갱신: $(date +'%Y-%m-%d')" && git push)
