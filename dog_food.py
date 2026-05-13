@@ -58,6 +58,15 @@ current_mtime = get_file_mtime(CACHE_FILE)
 df = load_data(current_mtime)
 
 if not df.empty:
+    # 🎯 무적의 방어 코드: 원본 엑셀의 컬럼명이 바뀌어도 웹 앱이 오류 없이 인식하도록 강제 변환
+    if '업소주소' in df.columns:
+        df = df.rename(columns={'업소주소': '상세주소'})
+    elif 'siteAddr' in df.columns:
+        df = df.rename(columns={'siteAddr': '상세주소'})
+        
+    if 'bsshNm' in df.columns and '업소명' not in df.columns:
+        df = df.rename(columns={'bsshNm': '업소명'})
+
     def get_region(addr):
         addr_str = str(addr).strip()
         if not addr_str or addr_str == 'nan': return "미분류"
@@ -74,7 +83,7 @@ if not df.empty:
     else:
         last_update = "정보 없음"
         
-    # 💡 신규 추가 파트: 새벽마다 회계사 로봇이 작성한 stats.json 장부를 읽어옵니다.
+    # 💡 로봇이 새벽마다 작성한 stats.json 장부를 읽어와 전체 개수와 증감 지표 연동
     total_count = len(df)
     diff_count = 0
     
@@ -85,14 +94,13 @@ if not df.empty:
                 diff_count = stats.get("diff", 0)
         except: pass
 
-    # 💡 상단을 2분할하여 좌측에는 시간 안내, 우측에는 전문적인 화살표 증감 대시보드 배치
+    # 상단을 2분할하여 대시보드 형태로 출력
     col1, col2 = st.columns([1, 1])
     
     with col1:
         st.info(f"⏱️ **최신 데이터 갱신:**\n{last_update}")
         
     with col2:
-        # 🎯 st.metric: diff_count가 양수면 초록색 ▲, 음수면 빨간색 ▼을 자동 생성합니다.
         st.metric(
             label="🍽️ 식약처 등록 동반 가능 업소", 
             value=f"{total_count:,}개", 
@@ -152,8 +160,6 @@ if not df.empty:
 # 4. 하단 안내 고지 및 범용 카운터
 st.write("---")
 
-# 💡 강제 시간 갱신(time.time())을 제거하여 브라우저의 자연스러운 캐싱을 유도합니다.
-# 새로운 방문자가 오거나, 일정 시간이 지나서 접속할 때만 숫자가 올라갑니다.
 counter_url = "https://api.visitorbadge.io/api/visitors?path=mumuabba-mumu-search&label=Mumu%20Friends&countColor=%234dabff"
 
 st.markdown(
