@@ -74,8 +74,30 @@ if not df.empty:
     else:
         last_update = "정보 없음"
         
-    # 💡 수정된 부분: 데이터 갱신 날짜 옆에 전체 등록 업소 개수(len(df))를 포매팅하여 추가했습니다.
-    st.info(f"⏱️ **데이터 갱신:** {last_update} | 🍽️ **총 등록 업소:** {len(df):,}개")
+    # 💡 신규 추가 파트: 새벽마다 회계사 로봇이 작성한 stats.json 장부를 읽어옵니다.
+    total_count = len(df)
+    diff_count = 0
+    
+    if os.path.exists("stats.json"):
+        try:
+            with open("stats.json", "r", encoding="utf-8") as f:
+                stats = json.load(f)
+                diff_count = stats.get("diff", 0)
+        except: pass
+
+    # 💡 상단을 2분할하여 좌측에는 시간 안내, 우측에는 전문적인 화살표 증감 대시보드 배치
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.info(f"⏱️ **최신 데이터 갱신:**\n{last_update}")
+        
+    with col2:
+        # 🎯 st.metric: diff_count가 양수면 초록색 ▲, 음수면 빨간색 ▼을 자동 생성합니다.
+        st.metric(
+            label="🍽️ 식약처 등록 동반 가능 업소", 
+            value=f"{total_count:,}개", 
+            delta=f"{diff_count}개"
+        )
 
     broad_regions = sorted([r for r in df["지역"].unique() if str(r) not in ["미분류", "nan", "None"]])
     selected_broad = st.pills("광역 선택", broad_regions, selection_mode="single", label_visibility="collapsed")
