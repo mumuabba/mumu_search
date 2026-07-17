@@ -1,3 +1,4 @@
+import os
 import time
 
 import requests
@@ -10,8 +11,12 @@ HEADERS = {
     "Referer": "https://www.foodsafetykorea.go.kr/portal/petKorea.do",
 }
 
-TIMEOUT = 60
-RETRIES = 3
+# 식약처 방화벽이 일부 IP 대역의 접속을 응답 없이 버린다(ConnectTimeout). 한국에서는
+# 100% 붙지만 GitHub Actions 러너에서는 약 1/3만 성공한다. 같은 IP로 재시도해봐야
+# 똑같이 막히므로, CI에서는 재시도를 1회로 줄이고 대신 러너를 여러 대 띄워
+# 서로 다른 IP로 시도한다(update_data.yml의 matrix 참고).
+TIMEOUT = int(os.environ.get("MUMU_TIMEOUT", "60"))
+RETRIES = int(os.environ.get("MUMU_RETRIES", "3"))
 BACKOFF = 5
 MIN_BYTES = 1000
 XLSX_MAGIC = b"PK\x03\x04"

@@ -1,0 +1,5 @@
+# 데이터 수집 파이프라인(crawler/update_stats/convert_to_json) 전용.
+# 웹앱 의존성은 requirements.txt 를 쓴다. CI에 streamlit까지 설치할 이유가 없어 분리했다.
+requests>=2.31
+pandas>=2.0
+openpyxl>=3.1
