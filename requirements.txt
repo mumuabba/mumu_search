@@ -1,5 +1,5 @@
-streamlit
-pandas
-openpyxl
-pillow
-streamlit-keyup
+# st.pills 는 streamlit 1.40 부터 제공된다.
+streamlit>=1.40
+pandas>=2.0
+openpyxl>=3.1
+pillow>=10.0
